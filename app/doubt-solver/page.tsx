@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
@@ -9,23 +9,23 @@ import { DashboardNav } from "@/components/dashboard-nav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
-import { MessageCircle, Send, Lightbulb } from "lucide-react";
-import ReactMarkdown from "react-markdown";
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from '@/components/ui/card';
+import { useToast } from '@/hooks/use-toast';
+import { MessageCircle, Send, Lightbulb } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 
 interface Doubt {
-  id: string;
-  question: string;
-  answer: string;
-  subject?: string;
-  examType?: string;
-  timestamp: Date;
+	id: string;
+	question: string;
+	answer: string;
+	subject?: string;
+	examType?: string;
+	timestamp: Date;
 }
 
 export default function DoubtSolverPage() {
@@ -61,16 +61,16 @@ export default function DoubtSolverPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.question.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter a question",
-        variant: "destructive",
-      });
-      return;
-    }
+		if (!formData.question.trim()) {
+			toast({
+				title: 'Error',
+				description: 'Please enter a question',
+				variant: 'destructive',
+			});
+			return;
+		}
 
-    setLoading(true);
+		setLoading(true);
 
     try {
       const response = await fetch("/api/solve-doubt", {
@@ -103,21 +103,21 @@ export default function DoubtSolverPage() {
         language: "english",
       });
 
-      toast({
-        title: "Success",
-        description: "Your doubt has been solved!",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description:
-          error instanceof Error ? error.message : "Failed to solve doubt",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+			toast({
+				title: 'Success',
+				description: 'Your doubt has been solved!',
+			});
+		} catch (error) {
+			toast({
+				title: 'Error',
+				description:
+					error instanceof Error ? error.message : 'Failed to solve doubt',
+				variant: 'destructive',
+			});
+		} finally {
+			setLoading(false);
+		}
+	};
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">

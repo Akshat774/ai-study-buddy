@@ -1,5 +1,5 @@
-import { generateText, streamText } from "ai";
-import { groq } from "@ai-sdk/groq";
+import { generateText, streamText } from 'ai';
+import { groq } from '@ai-sdk/groq';
 
 /**
  * Initialize Groq client with API key
@@ -7,48 +7,48 @@ import { groq } from "@ai-sdk/groq";
  */
 
 export interface GroqOptions {
-  temperature?: number;
-  maxTokens?: number;
-  topP?: number;
-  frequencyPenalty?: number;
-  presencePenalty?: number;
+	temperature?: number;
+	maxTokens?: number;
+	topP?: number;
+	frequencyPenalty?: number;
+	presencePenalty?: number;
 }
 
-const GROQ_MODEL = "llama-3.1-8b-instant";
+const GROQ_MODEL = 'llama-3.1-8b-instant';
 
 /**
  * Generate text using Groq API
  * Use this for non-streaming responses (summaries, short answers, etc.)
  */
 export async function generateWithGroq(
-  prompt: string,
-  options: GroqOptions = {},
+	prompt: string,
+	options: GroqOptions = {},
 ): Promise<string> {
-  try {
-    const {
-      temperature = 0.7,
-      maxTokens = 2000,
-      topP = 1,
-      frequencyPenalty = 0,
-      presencePenalty = 0,
-    } = options;
+	try {
+		const {
+			temperature = 0.7,
+			maxTokens = 2000,
+			topP = 1,
+			frequencyPenalty = 0,
+			presencePenalty = 0,
+		} = options;
 
-    const result = await generateText({
-      model: groq(GROQ_MODEL),
-      prompt,
-      temperature,
-      topP,
-      frequencyPenalty: frequencyPenalty === 0 ? undefined : frequencyPenalty,
-      presencePenalty: presencePenalty === 0 ? undefined : presencePenalty,
-    });
+		const result = await generateText({
+			model: groq(GROQ_MODEL),
+			prompt,
+			temperature,
+			topP,
+			frequencyPenalty: frequencyPenalty === 0 ? undefined : frequencyPenalty,
+			presencePenalty: presencePenalty === 0 ? undefined : presencePenalty,
+		});
 
-    return result.text;
-  } catch (error) {
-    console.error("[Groq] Error generating text:", error);
-    throw new Error(
-      `Failed to generate response: ${error instanceof Error ? error.message : String(error)}`,
-    );
-  }
+		return result.text;
+	} catch (error) {
+		console.error('[Groq] Error generating text:', error);
+		throw new Error(
+			`Failed to generate response: ${error instanceof Error ? error.message : String(error)}`,
+		);
+	}
 }
 
 /**
@@ -56,52 +56,52 @@ export async function generateWithGroq(
  * Use this for long responses where you want streaming updates
  */
 export async function streamWithGroq(
-  prompt: string,
-  onChunk: (chunk: string) => void,
-  options: GroqOptions = {},
+	prompt: string,
+	onChunk: (chunk: string) => void,
+	options: GroqOptions = {},
 ): Promise<void> {
-  try {
-    const {
-      temperature = 0.7,
-      maxTokens = 2000,
-      topP = 1,
-      frequencyPenalty = 0,
-      presencePenalty = 0,
-    } = options;
+	try {
+		const {
+			temperature = 0.7,
+			maxTokens = 2000,
+			topP = 1,
+			frequencyPenalty = 0,
+			presencePenalty = 0,
+		} = options;
 
-    const stream = await streamText({
-      model: groq(GROQ_MODEL),
-      prompt,
-      temperature,
-      topP,
-      frequencyPenalty: frequencyPenalty === 0 ? undefined : frequencyPenalty,
-      presencePenalty: presencePenalty === 0 ? undefined : presencePenalty,
-    });
+		const stream = await streamText({
+			model: groq(GROQ_MODEL),
+			prompt,
+			temperature,
+			topP,
+			frequencyPenalty: frequencyPenalty === 0 ? undefined : frequencyPenalty,
+			presencePenalty: presencePenalty === 0 ? undefined : presencePenalty,
+		});
 
-    for await (const chunk of stream.textStream) {
-      onChunk(chunk);
-    }
-  } catch (error) {
-    console.error("[Groq] Error streaming text:", error);
-    throw new Error(
-      `Failed to stream response: ${error instanceof Error ? error.message : String(error)}`,
-    );
-  }
+		for await (const chunk of stream.textStream) {
+			onChunk(chunk);
+		}
+	} catch (error) {
+		console.error('[Groq] Error streaming text:', error);
+		throw new Error(
+			`Failed to stream response: ${error instanceof Error ? error.message : String(error)}`,
+		);
+	}
 }
 
 /**
  * Generate a comprehensive study plan using Groq
  */
 export async function generateStudyPlan(
-  subject: string,
-  exam: string,
-  days: string,
-  difficulty: string,
-  topics: string,
+	subject: string,
+	exam: string,
+	days: string,
+	difficulty: string,
+	topics: string,
 ): Promise<string> {
-  const dayCount = parseInt(days) || 30;
+	const dayCount = parseInt(days) || 30;
 
-  const prompt = `You are an expert exam preparation coach. Create an EXTREMELY DETAILED and COMPREHENSIVE ${dayCount}-day study plan for a student preparing for the ${exam} exam in ${subject}.
+	const prompt = `You are an expert exam preparation coach. Create an EXTREMELY DETAILED and COMPREHENSIVE ${dayCount}-day study plan for a student preparing for the ${exam} exam in ${subject}.
 
 CRITICAL REQUIREMENTS:
 - Difficulty Level: ${difficulty.toUpperCase()} (Easy = lighter load, Medium = standard, Hard = intensive)
@@ -178,7 +178,7 @@ For each of the ${topics} topics:
 - Motivation strategies
 
 ## 9. TIME MANAGEMENT
-- Optimal study hours per day: ${difficulty === "hard" ? "6-8 hours" : difficulty === "medium" ? "4-6 hours" : "3-4 hours"}
+- Optimal study hours per day: ${difficulty === 'hard' ? '6-8 hours' : difficulty === 'medium' ? '4-6 hours' : '3-4 hours'}
 - Break schedule
 - Study peak hours
 - Buffer days for review
@@ -227,51 +227,80 @@ INSTRUCTIONS FOR RESPONSE:
 
 Create this plan now with maximum detail and practical applicability:`;
 
-  return generateWithGroq(prompt, {
-    temperature: 0.8,
-    maxTokens: 8000,
-  });
+	return generateWithGroq(prompt, {
+		temperature: 0.8,
+		maxTokens: 8000,
+	});
 }
 
 /**
  * Solve a student's doubt with detailed explanation
  */
 export async function solveDubt(
-  question: string,
-  subject: string,
-  examType: string,
+	question: string,
+	subject: string,
+	answerType: string,
 ): Promise<string> {
-  const prompt = `Answer this question comprehensively for a student preparing for ${examType} exam in ${subject}.
+	let word_limit = '';
+	let additionalNotes = '';
 
-Question: ${question}
+	switch (answerType) {
+		case 'Short':
+			word_limit = '100-200';
+			break;
+		case 'Medium':
+			word_limit = '200-500';
+			additionalNotes =
+				'You do not need to focus on all topics equally and may choose which topics needs to be focused on.';
+			break;
+		case 'Long':
+			word_limit = '500-1000';
+			additionalNotes =
+				'You do not need to focus on all topics equally and may choose which topics needs to be focused on. The topic should not feel under explained and should be communicated clearly.';
+			break;
+		case 'Detailed':
+			word_limit = '1000+';
+			additionalNotes =
+				'You do not need to focus on all topics equally and may choose which topics needs to be focused on. The topic should not feel under explained and should be communicated clearly. Every topic must be completely understandable alone even if it need more explanation or you may reference your previous topics by clearly referencing them. The same point should not be repeated without valid reason. If your knowledge is limited  or is not updated you are to state so clearly. Feel free to change the topic names to better suit your explanation.';
+			break;
+		default:
+			word_limit = '200-500';
+	}
 
-Please provide:
-1. Clear concept explanation with definitions
-2. Why this concept is important for the exam
-3. Step-by-step solution or detailed explanation
-4. 2-3 practical examples
-5. Common misconceptions and how to avoid them
-6. Quick memory aid or mnemonic
-7. Practice questions to test understanding
-8. Related concepts to study
+	const prompt = `Answer the question in a well-thought out method manner encompassing all the nuances that are important.
 
-Format the response using markdown with clear sections and bullet points for easy reading.`;
+                    The answer is to be within ${word_limit} words with flexibility of 100 words. 
 
-  return generateWithGroq(prompt, {
-    temperature: 0.8,
-    maxTokens: 2500,
-  });
+                    In the answer provide 8 sections:
+
+                    1. Clear concept Explanation defining important terms as needed, comprising a baseline for the further points
+                    2. Explain the importance of the concept in various feilds and mention their applications
+                    3. A step-step explanation for the answer if needed else explain the concept in more detail including nusances
+                    4. 2-3 practical examples
+                    5. Common pitfalls and missconceptions that may be encountered
+                    6. Short Concise Answer
+                    7. Practice questions to test understanding
+                    8. Related topics to study
+
+                    Format the response using markdown with clear sections and bullet points for easy reading.
+                    
+                    ${additionalNotes}
+
+                    The question is to be answered with respect to ${subject}.
+                    The question is : "${question}"`;
+
+	return generateWithGroq(prompt, { temperature: 0.8, maxTokens: 2500 });
 }
 
 /**
  * Summarize study notes intelligently
  */
 export async function summarizeNotes(
-  notes: string,
-  subject: string,
-  examType: string,
+	notes: string,
+	subject: string,
+	examType: string,
 ): Promise<string> {
-  const prompt = `Intelligently summarize the following study notes for a student preparing for ${examType} exam in ${subject}.
+	const prompt = `Intelligently summarize the following study notes for a student preparing for ${examType} exam in ${subject}.
 
 Notes:
 ${notes}
@@ -287,19 +316,19 @@ Please provide:
 
 Format as structured markdown with sections and bullet points for quick reference.`;
 
-  return generateWithGroq(prompt, {
-    temperature: 0.7,
-    maxTokens: 2000,
-  });
+	return generateWithGroq(prompt, {
+		temperature: 0.7,
+		maxTokens: 2000,
+	});
 }
 
 /**
  * Extract key concepts from notes
  */
 export async function extractKeyConceptsFromNotes(
-  notes: string,
+	notes: string,
 ): Promise<string> {
-  const prompt = `Extract and list all key concepts, definitions, and important terms from the following study notes. Format as a structured markdown list grouped by topic.
+	const prompt = `Extract and list all key concepts, definitions, and important terms from the following study notes. Format as a structured markdown list grouped by topic.
 
 Notes:
 ${notes}
@@ -310,8 +339,8 @@ Provide:
 3. Key relationships between concepts
 4. Examples and applications`;
 
-  return generateWithGroq(prompt, {
-    temperature: 0.6,
-    maxTokens: 1500,
-  });
+	return generateWithGroq(prompt, {
+		temperature: 0.6,
+		maxTokens: 1500,
+	});
 }
