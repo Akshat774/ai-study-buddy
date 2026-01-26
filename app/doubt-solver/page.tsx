@@ -127,7 +127,7 @@ export default function DoubtSolverPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+    <div className="min-h-screen bg-linear-to-br from-blue-50 via-purple-50 to-pink-50">
       <DashboardNav />
 
       <motion.main
@@ -142,7 +142,7 @@ export default function DoubtSolverPage() {
           animate={{ opacity: 1, y: 0 }}
         >
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl">
+            <div className="p-3 bg-linear-to-br from-blue-500 to-purple-500 rounded-xl">
               <Lightbulb className="w-6 h-6 text-white" />
             </div>
             <h1 className="text-4xl font-bold text-gradient">

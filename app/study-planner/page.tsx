@@ -1,31 +1,30 @@
-'use client'
+"use client";
 
-import React from "react"
-
-import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { DashboardNav } from '@/components/dashboard-nav'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { useToast } from '@/hooks/use-toast'
-import { BookOpen, Zap, Clock, Target, Sparkles } from 'lucide-react'
-
-interface DailyPlan {
-  day: number
-  topics: string[]
-  duration: string
-  revision: string
-  tips: string
-}
-
-interface StudyPlanResponse {
-  overview: string
-  daily_schedule: DailyPlan[]
-  key_resources: string[]
-  study_tips: string[]
-  revision_strategy: string
-}
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import { DashboardNav } from "@/components/dashboard-nav";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
+import ReactMarkdown from "react-markdown";
+import {
+  BookOpen,
+  Zap,
+  Clock,
+  Target,
+  Sparkles,
+  Calendar,
+  AlertCircle,
+  CheckCircle,
+  Loader2,
+} from "lucide-react";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -33,88 +32,107 @@ const containerVariants = {
     opacity: 1,
     transition: { staggerChildren: 0.1, delayChildren: 0.2 },
   },
-}
+};
 
 const itemVariants = {
   hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } },
-}
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
+};
 
 const cardVariants = {
   hidden: { opacity: 0, x: -30 },
-  visible: { opacity: 1, x: 0, transition: { duration: 0.5, ease: 'easeOut' } },
-  hover: {
-    y: -5,
-    boxShadow: '0 10px 30px rgba(124, 58, 237, 0.15)',
-    transition: { duration: 0.3 },
-  },
-}
+  visible: { opacity: 1, x: 0, transition: { duration: 0.5, ease: "easeOut" } },
+};
 
 export default function StudyPlannerPage() {
-  const { toast } = useToast()
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
-    subject: '',
-    exam: 'JEE Advanced',
-    days: '30',
-    topics: '',
-    difficulty: 'medium',
-  })
+    subject: "",
+    exam: "JEE Advanced",
+    numDays: "30",
+    topicsLength: "5",
+    difficulty: "medium",
+  });
 
-  const [loading, setLoading] = useState(false)
-  const [studyPlan, setStudyPlan] = useState<StudyPlanResponse | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false);
+  const [plan, setPlan] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.currentTarget
-    console.log(`[v0] Input changed: ${name} = ${value}`)
-    setFormData((prev) => ({ ...prev, [name]: value }))
-  }
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    console.log('[v0] Form submitted with data:', formData)
+    e.preventDefault();
 
-    if (!formData.subject || !formData.exam || !formData.days) {
-      toast({ title: 'Error', description: 'Please fill in all required fields', variant: 'destructive' })
-      return
+    if (!formData.subject.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a subject",
+        variant: "destructive",
+      });
+      return;
     }
 
-    setLoading(true)
-    setError(null)
-    setStudyPlan(null)
+    const days = parseInt(formData.numDays);
+    if (isNaN(days) || days < 1 || days > 365) {
+      toast({
+        title: "Error",
+        description: "Please enter days between 1 and 365",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setPlan(null);
 
     try {
-      console.log('[v0] Fetching study plan API...')
-      const response = await fetch('/api/generate-study-plan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/generate-study-plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
-      })
+      });
 
-      console.log('[v0] Response status:', response.status)
-      const data = await response.json()
-      console.log('[v0] Response data:', data)
+      const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to generate study plan')
+        throw new Error(data.error || "Failed to generate study plan");
       }
 
-      if (data.data) {
-        setStudyPlan(data.data)
-        toast({ title: 'Success!', description: 'Study plan generated successfully' })
+      if (!data.success) {
+        throw new Error(data.error || "API returned unsuccessful response");
       }
+
+      if (!data.plan) {
+        throw new Error("No plan received from API");
+      }
+
+      setPlan(data.plan);
+      toast({
+        title: "Success!",
+        description: "Study plan generated successfully",
+      });
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An error occurred'
-      console.log('[v0] Error:', errorMessage)
-      setError(errorMessage)
-      toast({ title: 'Error', description: errorMessage, variant: 'destructive' })
+      const errorMessage =
+        err instanceof Error ? err.message : "An error occurred";
+      setError(errorMessage);
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50">
+    <div className="min-h-screen bg-linear-to-br from-purple-50 via-blue-50 to-indigo-50">
       <DashboardNav />
 
       <motion.main
@@ -131,12 +149,17 @@ export default function StudyPlannerPage() {
           transition={{ duration: 0.6 }}
         >
           <div className="flex items-center gap-3 mb-4">
-            <div className="p-3 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl shadow-lg">
-              <Sparkles className="w-8 h-8 text-white" />
+            <div className="p-3 bg-linear-to-br from-purple-500 to-blue-500 rounded-xl shadow-lg">
+              <Calendar className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-5xl font-bold text-gradient">AI Study Plan Generator</h1>
+            <h1 className="text-5xl font-bold bg-linear-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+              Study Plan Generator
+            </h1>
           </div>
-          <p className="text-lg text-gray-600">Create personalized, day-wise study plans powered by AI</p>
+          <p className="text-lg text-gray-600">
+            Create personalized, day-wise study plans powered by AI. Get
+            detailed breakdown of topics, resources, and tips.
+          </p>
         </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -148,7 +171,7 @@ export default function StudyPlannerPage() {
             animate="visible"
           >
             <motion.div variants={itemVariants}>
-              <Card className="glass-card sticky top-24 border-purple-200/50">
+              <Card className="sticky top-24 border-purple-200/50 shadow-lg">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Target className="w-5 h-5 text-purple-600" />
@@ -158,93 +181,117 @@ export default function StudyPlannerPage() {
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={handleSubmit} className="space-y-4">
+                    {/* Subject */}
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Subject *</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Subject <span className="text-red-500">*</span>
+                      </label>
                       <Input
                         type="text"
                         name="subject"
                         value={formData.subject}
                         onChange={handleInputChange}
-                        placeholder="e.g., Physics, Chemistry"
-                        className="w-full bg-white/70 border border-purple-200"
+                        placeholder="e.g., Physics, Chemistry, Biology"
+                        className="w-full bg-white/70 border-purple-200 focus:border-purple-500"
+                        required
                       />
                     </div>
 
+                    {/* Exam Type */}
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Exam Type *</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Exam Type <span className="text-red-500">*</span>
+                      </label>
                       <select
                         name="exam"
                         value={formData.exam}
                         onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-purple-200 rounded-lg bg-white/70 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        className="w-full px-3 py-2 border border-purple-200 rounded-lg bg-white/70 focus:outline-none focus:ring-2 focus:ring-purple-500 font-medium"
                       >
                         <option value="JEE Advanced">JEE Advanced</option>
                         <option value="JEE Mains">JEE Mains</option>
                         <option value="NEET">NEET</option>
                         <option value="GATE">GATE</option>
-                        <option value="Board">Board Exams</option>
-                        <option value="Custom">Custom</option>
+                        <option value="Board Exam">Board Exam</option>
+                        <option value="UPSC">UPSC</option>
+                        <option value="CAT">CAT</option>
+                        <option value="Custom Exam">Custom Exam</option>
                       </select>
                     </div>
 
+                    {/* Days */}
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Days Available *</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Days Available <span className="text-red-500">*</span>
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          name="numDays"
+                          value={formData.numDays}
+                          onChange={handleInputChange}
+                          min="1"
+                          max="365"
+                          className="flex-1 bg-white/70 border-purple-200 focus:border-purple-500"
+                          required
+                        />
+                        <span className="text-sm font-medium text-gray-600">
+                          days
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Topics Count */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Number of Topics
+                      </label>
                       <Input
                         type="number"
-                        name="days"
-                        value={formData.days}
+                        name="topicsLength"
+                        value={formData.topicsLength}
                         onChange={handleInputChange}
                         min="1"
-                        max="365"
-                        className="w-full bg-white/70 border border-purple-200"
+                        max="20"
+                        className="w-full bg-white/70 border-purple-200 focus:border-purple-500"
                       />
                     </div>
 
+                    {/* Difficulty */}
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Topics to Cover</label>
-                      <textarea
-                        name="topics"
-                        value={formData.topics}
-                        onChange={handleInputChange}
-                        placeholder="e.g., Thermodynamics, Waves"
-                        className="w-full px-3 py-2 border border-purple-200 rounded-lg bg-white/70 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
-                        rows={2}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Difficulty</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Difficulty Level
+                      </label>
                       <select
                         name="difficulty"
                         value={formData.difficulty}
                         onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-purple-200 rounded-lg bg-white/70 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        className="w-full px-3 py-2 border border-purple-200 rounded-lg bg-white/70 focus:outline-none focus:ring-2 focus:ring-purple-500 font-medium"
                       >
-                        <option value="easy">Easy (Basics)</option>
-                        <option value="medium">Medium (Standard)</option>
-                        <option value="hard">Hard (Advanced)</option>
+                        <option value="easy">Easy (3-4 hours/day)</option>
+                        <option value="medium">Medium (4-6 hours/day)</option>
+                        <option value="hard">Hard (6-8 hours/day)</option>
                       </select>
                     </div>
 
-                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                      <Button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full btn-gradient font-semibold text-base h-11"
-                      >
-                        {loading ? (
-                          <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            Generating...
-                          </div>
-                        ) : (
-                          <>
-                            <Zap className="w-4 h-4 mr-2" />
-                            Generate Plan
-                          </>
-                        )}
-                      </Button>
-                    </motion.div>
+                    {/* Submit Button */}
+                    <Button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold py-2 rounded-lg transition-all duration-300 disabled:opacity-50"
+                    >
+                      {loading ? (
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Generating...
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="w-4 h-4" />
+                          Generate Plan
+                        </div>
+                      )}
+                    </Button>
                   </form>
                 </CardContent>
               </Card>
@@ -262,157 +309,176 @@ export default function StudyPlannerPage() {
               <motion.div variants={itemVariants}>
                 <Card className="border-red-200 bg-red-50">
                   <CardContent className="pt-6">
-                    <p className="text-red-800 font-medium">{error}</p>
+                    <div className="flex gap-3">
+                      <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+                      <div>
+                        <h3 className="font-semibold text-red-900">Error</h3>
+                        <p className="text-sm text-red-800 mt-1">{error}</p>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
               </motion.div>
             )}
 
-            {studyPlan && (
-              <>
-                {/* Overview */}
-                <motion.div variants={itemVariants} className="mb-6">
-                  <Card className="glass-card border-purple-200/50">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <BookOpen className="w-5 h-5 text-purple-600" />
-                        Plan Overview
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-gray-700 leading-relaxed">{studyPlan.overview}</p>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-
-                {/* Daily Schedule */}
-                <motion.div variants={itemVariants} className="mb-6">
-                  <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
-                    <Clock className="w-6 h-6 text-blue-600" />
-                    Daily Schedule
-                  </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto pr-2">
-                    {studyPlan.daily_schedule.map((day, index) => (
-                      <motion.div
-                        key={index}
-                        variants={cardVariants}
-                        whileHover="hover"
-                        className="h-fit"
+            {plan && (
+              <motion.div variants={itemVariants}>
+                <Card className="border-purple-200/50 shadow-lg">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                      Your Personalized Study Plan
+                    </CardTitle>
+                    <CardDescription>
+                      {formData.exam} • {formData.subject} • {formData.numDays}{" "}
+                      days • {formData.difficulty} level
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="bg-linear-to-br from-purple-50 to-blue-50 p-6 rounded-lg border border-purple-200/50 prose prose-sm max-w-none">
+                      <ReactMarkdown
+                        components={{
+                          h1: ({ node, ...props }) => (
+                            <h1
+                              className="text-2xl font-bold text-purple-900 mt-6 mb-4 first:mt-0"
+                              {...props}
+                            />
+                          ),
+                          h2: ({ node, ...props }) => (
+                            <h2
+                              className="text-xl font-bold text-purple-800 mt-5 mb-3"
+                              {...props}
+                            />
+                          ),
+                          h3: ({ node, ...props }) => (
+                            <h3
+                              className="text-lg font-semibold text-purple-700 mt-4 mb-2"
+                              {...props}
+                            />
+                          ),
+                          p: ({ node, ...props }) => (
+                            <p
+                              className="text-gray-700 mb-3 leading-relaxed"
+                              {...props}
+                            />
+                          ),
+                          ul: ({ node, ...props }) => (
+                            <ul
+                              className="list-disc list-inside space-y-1 mb-3 text-gray-700"
+                              {...props}
+                            />
+                          ),
+                          ol: ({ node, ...props }) => (
+                            <ol
+                              className="list-decimal list-inside space-y-1 mb-3 text-gray-700"
+                              {...props}
+                            />
+                          ),
+                          li: ({ node, ...props }) => (
+                            <li className="text-gray-700" {...props} />
+                          ),
+                          blockquote: ({ node, ...props }) => (
+                            <blockquote
+                              className="border-l-4 border-purple-500 pl-4 py-2 italic text-gray-600 my-3"
+                              {...props}
+                            />
+                          ),
+                          strong: ({ node, ...props }) => (
+                            <strong
+                              className="font-bold text-purple-900"
+                              {...props}
+                            />
+                          ),
+                          code: ({ node, ...props }) => (
+                            <code
+                              className="bg-purple-100 text-purple-900 px-2 py-1 rounded text-sm"
+                              {...props}
+                            />
+                          ),
+                        }}
                       >
-                        <Card className="glass-card">
-                          <CardHeader className="pb-3">
-                            <div className="flex justify-between items-start">
-                              <CardTitle className="text-lg">Day {day.day}</CardTitle>
-                              <span className="text-xs bg-purple-500/20 text-purple-700 px-2 py-1 rounded-full font-semibold">
-                                {day.duration}
-                              </span>
-                            </div>
-                          </CardHeader>
-                          <CardContent className="space-y-3 text-sm">
-                            <div>
-                              <p className="font-semibold text-purple-700 mb-1">Topics:</p>
-                              <ul className="space-y-1">
-                                {day.topics.map((topic, i) => (
-                                  <motion.li
-                                    key={i}
-                                    initial={{ opacity: 0, x: -10 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: i * 0.05 }}
-                                    className="flex items-start gap-2 text-gray-700"
-                                  >
-                                    <span className="text-purple-500 font-bold mt-0.5">•</span>
-                                    {topic}
-                                  </motion.li>
-                                ))}
-                              </ul>
-                            </div>
-                            <div className="pt-2 border-t border-purple-200">
-                              <p className="text-blue-700 font-semibold">✓ {day.revision}</p>
-                            </div>
-                            <div className="pt-1">
-                              <p className="text-amber-700">💡 {day.tips}</p>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </motion.div>
-                    ))}
-                  </div>
-                </motion.div>
-
-                {/* Study Tips */}
-                <motion.div variants={itemVariants} className="mb-6">
-                  <Card className="glass-card">
-                    <CardHeader>
-                      <CardTitle>Study Tips & Strategy</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div>
-                        <h3 className="font-semibold text-purple-700 mb-3">Key Tips:</h3>
-                        <ul className="space-y-2">
-                          {studyPlan.study_tips.map((tip, i) => (
-                            <motion.li
-                              key={i}
-                              initial={{ opacity: 0, x: -10 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ delay: i * 0.1 }}
-                              className="flex items-start gap-3 text-gray-700"
-                            >
-                              <span className="text-purple-500 font-bold text-lg">•</span>
-                              <span>{tip}</span>
-                            </motion.li>
-                          ))}
-                        </ul>
-                      </div>
-                      <div className="pt-4 border-t border-purple-200">
-                        <h3 className="font-semibold text-blue-700 mb-2">Revision Strategy:</h3>
-                        <p className="text-gray-700 leading-relaxed">{studyPlan.revision_strategy}</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-
-                {/* Resources */}
-                <motion.div variants={itemVariants}>
-                  <Card className="glass-card">
-                    <CardHeader>
-                      <CardTitle>Recommended Resources</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex flex-wrap gap-3">
-                        {studyPlan.key_resources.map((resource, i) => (
-                          <motion.div
-                            key={i}
-                            whileHover={{ scale: 1.08, y: -2 }}
-                            whileTap={{ scale: 0.95 }}
-                            className="px-4 py-2 bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-full text-sm font-semibold text-gray-800 border border-purple-200 cursor-pointer"
-                          >
-                            {resource}
-                          </motion.div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              </>
+                        {plan}
+                      </ReactMarkdown>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
             )}
 
-            {!studyPlan && !error && (
-              <motion.div
-                variants={itemVariants}
-                className="flex flex-col items-center justify-center h-96 text-gray-500"
-              >
-                <motion.div
-                  animate={{ y: [0, -10, 0] }}
-                  transition={{ duration: 3, repeat: Infinity }}
-                >
-                  <BookOpen className="w-20 h-20 mb-4 opacity-30" />
-                </motion.div>
-                <p className="text-lg font-semibold">Fill in your details and generate a study plan</p>
+            {!plan && !error && (
+              <motion.div variants={itemVariants}>
+                <Card className="border-dashed border-purple-300 bg-purple-50/50">
+                  <CardContent className="pt-12 pb-12">
+                    <div className="text-center">
+                      <div className="flex justify-center mb-4">
+                        <div className="p-4 bg-purple-100 rounded-full">
+                          <BookOpen className="w-8 h-8 text-purple-600" />
+                        </div>
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                        Generate Your Study Plan
+                      </h3>
+                      <p className="text-gray-600 max-w-sm mx-auto">
+                        Fill in your exam details on the left to generate a
+                        personalized study plan with day-by-day breakdown,
+                        resources, and tips.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
               </motion.div>
             )}
           </motion.div>
         </div>
+
+        {/* Features Section */}
+        <motion.div
+          className="mt-16"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          <h2 className="text-3xl font-bold text-gray-900 mb-8">
+            What You'll Get
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              {
+                icon: Calendar,
+                title: "Day-wise Breakdown",
+                desc: "Topics organized by day with time allocation",
+              },
+              {
+                icon: Target,
+                title: "Focused Goals",
+                desc: "Clear daily targets and revision schedules",
+              },
+              {
+                icon: Zap,
+                title: "Expert Tips",
+                desc: "Study strategies tailored to your difficulty level",
+              },
+              {
+                icon: Clock,
+                title: "Time Management",
+                desc: "Realistic time allocations for each topic",
+              },
+            ].map((feature, idx) => (
+              <motion.div key={idx} variants={cardVariants}>
+                <Card className="border-purple-200/50 hover:shadow-lg transition-all">
+                  <CardContent className="pt-6">
+                    <feature.icon className="w-8 h-8 text-purple-600 mb-3" />
+                    <h3 className="font-semibold text-gray-900 mb-2">
+                      {feature.title}
+                    </h3>
+                    <p className="text-sm text-gray-600">{feature.desc}</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
       </motion.main>
     </div>
-  )
+  );
 }
