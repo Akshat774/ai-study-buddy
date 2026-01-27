@@ -84,11 +84,7 @@ export default function SignupPage() {
 		setLoading(true);
 
 		try {
-			const result = await signUp(
-				formData.email,
-				formData.password,
-				formData.fullName,
-			);
+			const result = await signUp(formData.email, formData.password);
 
 			if (result.error) {
 				toast({
