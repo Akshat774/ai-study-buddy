@@ -26,6 +26,7 @@ export default function SignupPage() {
 
 	const [loading, setLoading] = useState(false);
 	const [formData, setFormData] = useState({
+		fullName: '',
 		email: '',
 		password: '',
 		confirmPassword: '',
@@ -53,7 +54,7 @@ export default function SignupPage() {
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 
-		if (!formData.email || !formData.password) {
+		if (!formData.fullName || !formData.email || !formData.password) {
 			toast({
 				title: 'Error',
 				description: 'Please fill in all fields',
@@ -83,7 +84,11 @@ export default function SignupPage() {
 		setLoading(true);
 
 		try {
-			const result = await signUp(formData.email, formData.password);
+			const result = await signUp(
+				formData.email,
+				formData.password,
+				formData.fullName,
+			);
 
 			if (result.error) {
 				toast({
@@ -139,6 +144,12 @@ export default function SignupPage() {
 				<CardContent>
 					<form onSubmit={handleSubmit} className="space-y-4">
 						{[
+							{
+								id: 'fullName',
+								label: 'Full Name',
+								type: 'text',
+								placeholder: 'Your name',
+							},
 							{
 								id: 'email',
 								label: 'Email Address',
