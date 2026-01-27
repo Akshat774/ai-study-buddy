@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from "react";
-import { motion } from "framer-motion";
-import { gsap } from "gsap";
-import { MouseParallax } from "react-just-parallax";
+import React, { useEffect, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
+import { gsap } from 'gsap';
+import { MouseParallax } from 'react-just-parallax';
 
-import { DashboardNav } from "@/components/dashboard-nav";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { DashboardNav } from '@/components/dashboard-nav';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
 	Card,
 	CardContent,
@@ -19,7 +19,7 @@ import { useToast } from '@/hooks/use-toast';
 import { MessageCircle, Send, Lightbulb } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
-interface Doubt {
+interface currentDoubt {
 	id: string;
 	question: string;
 	answer: string;
@@ -28,38 +28,64 @@ interface Doubt {
 	timestamp: Date;
 }
 
+interface doubts {
+	doubt_id: number;
+	question: string;
+	answer: string;
+}
+
+interface ApiResponse {
+	success: boolean;
+	Doubts: doubts[];
+}
+
 export default function DoubtSolverPage() {
-  const { toast } = useToast();
-  const [loading, setLoading] = useState(false);
-  const [doubts, setDoubts] = useState<Doubt[]>([]);
-  const containerRef = useRef<HTMLDivElement>(null);
+	const { toast } = useToast();
+	const [loading, setLoading] = useState(false);
+	const [currentDoubt, setCurrentDoubt] = useState<currentDoubt | null>(null);
+	const [doubts, setDoubts] = useState<doubts[]>([]);
+	const containerRef = useRef<HTMLDivElement>(null);
 
-  const [formData, setFormData] = useState({
-    question: "",
-    subject: "",
-    examType: "",
-    language: "english",
-  });
+	const [formData, setFormData] = useState({
+		question: '',
+		subject: '',
+		examType: '',
+		language: 'english',
+	});
 
-  useEffect(() => {
-    gsap.fromTo(
-      containerRef.current,
-      { opacity: 0, y: 24 },
-      { opacity: 1, y: 0, duration: 0.9, ease: "power3.out" },
-    );
-  }, []);
+	useEffect(() => {
+		const fetchDoubts = async () => {
+			try {
+				const response = await fetch('/api/solve-doubt');
+				const data: ApiResponse = await response.json();
 
-  const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >,
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+				if (data.success) setDoubts(data.Doubts);
+			} catch (err) {
+				console.error('Failed to fetch:', err);
+			}
+		};
+		fetchDoubts();
+	}, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+	useEffect(() => {
+		gsap.fromTo(
+			containerRef.current,
+			{ opacity: 0, y: 24 },
+			{ opacity: 1, y: 0, duration: 0.9, ease: 'power3.out' },
+		);
+	}, []);
+
+	const handleInputChange = (
+		e: React.ChangeEvent<
+			HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+		>,
+	) => {
+		const { name, value } = e.target;
+		setFormData((prev) => ({ ...prev, [name]: value }));
+	};
+
+	const handleSubmit = async (e: React.FormEvent) => {
+		e.preventDefault();
 
 		if (!formData.question.trim()) {
 			toast({
@@ -72,36 +98,27 @@ export default function DoubtSolverPage() {
 
 		setLoading(true);
 
-    try {
-      const response = await fetch("/api/solve-doubt", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
+		try {
+			const response = await fetch('/api/solve-doubt', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(formData),
+			});
 
-      const data = await response.json();
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || "Failed to solve doubt");
-      }
+			const data = await response.json();
+			console.log(data);
+			if (!response.ok || !data.success) {
+				throw new Error(data.error || 'Failed to solve doubt');
+			}
 
-      setDoubts((prev) => [
-        {
-          id: Date.now().toString(),
-          question: formData.question,
-          answer: data.answer || "",
-          subject: formData.subject || undefined,
-          examType: formData.examType || undefined,
-          timestamp: new Date(),
-        },
-        ...prev,
-      ]);
+			setCurrentDoubt(data);
 
-      setFormData({
-        question: "",
-        subject: "",
-        examType: "",
-        language: "english",
-      });
+			setFormData({
+				question: '',
+				subject: '',
+				examType: '',
+				language: 'english',
+			});
 
 			toast({
 				title: 'Success',
@@ -119,130 +136,165 @@ export default function DoubtSolverPage() {
 		}
 	};
 
-  return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
-      <DashboardNav />
+	return (
+		<div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+			<DashboardNav />
 
-      {/* Parallax background accents */}
-      <MouseParallax strength={0.03} enableOnTouchDevice={false}>
-        <div className="absolute -top-40 -left-40 h-[28rem] w-[28rem] rounded-full bg-purple-300/20 blur-3xl" />
-        <div className="absolute -bottom-40 -right-40 h-[28rem] w-[28rem] rounded-full bg-pink-300/20 blur-3xl" />
-      </MouseParallax>
+			{/* Parallax background accents */}
+			<MouseParallax strength={0.03} enableOnTouchDevice={false}>
+				<div className="absolute -top-40 -left-40 h-[28rem] w-[28rem] rounded-full bg-purple-300/20 blur-3xl" />
+				<div className="absolute -bottom-40 -right-40 h-[28rem] w-[28rem] rounded-full bg-pink-300/20 blur-3xl" />
+			</MouseParallax>
 
-      <motion.main
-        ref={containerRef}
-        className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10"
-      >
-        {/* Header */}
-        <div className="mb-10">
-          <div className="flex items-center gap-4 mb-2">
-            <div className="p-3 rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 shadow-lg">
-              <Lightbulb className="w-6 h-6 text-white" />
-            </div>
-            <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-purple-700 to-blue-600 bg-clip-text text-transparent">
-              Ask Your Doubts
-            </h1>
-          </div>
-          <p className="text-gray-600 text-lg">
-            Clear, exam-focused explanations — instantly.
-          </p>
-        </div>
+			<motion.main
+				ref={containerRef}
+				className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10"
+			>
+				{/* Header */}
+				<div className="mb-10">
+					<div className="flex items-center gap-4 mb-2">
+						<div className="p-3 rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 shadow-lg">
+							<Lightbulb className="w-6 h-6 text-white" />
+						</div>
+						<h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-purple-700 to-blue-600 bg-clip-text text-transparent">
+							Ask Your Doubts
+						</h1>
+					</div>
+					<p className="text-gray-600 text-lg">
+						Clear, exam-focused explanations — instantly.
+					</p>
+				</div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Question Form */}
-          <Card className="lg:col-span-1 sticky top-24 glass-card border-purple-200/60 backdrop-blur-xl">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageCircle className="w-5 h-5 text-purple-600" />
-                New Question
-              </CardTitle>
-              <CardDescription>Ask once. Understand clearly.</CardDescription>
-            </CardHeader>
+				<div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+					{/* Question Form */}
+					<Card className="lg:col-span-1 sticky top-24 glass-card border-purple-200/60 backdrop-blur-xl">
+						<CardHeader>
+							<CardTitle className="flex items-center gap-2">
+								<MessageCircle className="w-5 h-5 text-purple-600" />
+								New Question
+							</CardTitle>
+							<CardDescription>Ask once. Understand clearly.</CardDescription>
+						</CardHeader>
 
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <textarea
-                  name="question"
-                  placeholder="Type your question here…"
-                  value={formData.question}
-                  onChange={handleInputChange}
-                  className="w-full min-h-28 rounded-lg border border-purple-200 bg-white/70 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  required
-                />
+						<CardContent>
+							<form onSubmit={handleSubmit} className="space-y-4">
+								<textarea
+									name="question"
+									placeholder="Type your question here…"
+									value={formData.question}
+									onChange={handleInputChange}
+									className="w-full min-h-28 rounded-lg border border-purple-200 bg-white/70 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+									required
+								/>
 
-                <Input
-                  name="subject"
-                  placeholder="Subject (optional)"
-                  value={formData.subject}
-                  onChange={handleInputChange}
-                  className="bg-white/70 border-purple-200"
-                />
+								<Input
+									name="subject"
+									placeholder="Subject (optional)"
+									value={formData.subject}
+									onChange={handleInputChange}
+									className="bg-white/70 border-purple-200"
+								/>
 
-                <select
-                  name="examType"
-                  value={formData.examType}
-                  onChange={handleInputChange}
-                  className="w-full rounded-lg border border-purple-200 bg-white/70 px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500"
-                >
-                  <option value="">Select exam</option>
-                  <option value="JEE Main">JEE Main</option>
-                  <option value="JEE Advanced">JEE Advanced</option>
-                  <option value="NEET">NEET</option>
-                  <option value="GATE">GATE</option>
-                  <option value="Board">Board</option>
-                </select>
+								<select
+									name="examType"
+									value={formData.examType}
+									onChange={handleInputChange}
+									className="w-full rounded-lg border border-purple-200 bg-white/70 px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500"
+								>
+									<option value="">Select exam</option>
+									<option value="JEE Main">JEE Main</option>
+									<option value="JEE Advanced">JEE Advanced</option>
+									<option value="NEET">NEET</option>
+									<option value="GATE">GATE</option>
+									<option value="Board">Board</option>
+								</select>
 
-                <Button
-                  type="submit"
-                  className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:scale-[1.02] transition"
-                  disabled={loading}
-                >
-                  {loading ? "Thinking…" : "Get Answer"}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
+								<Button
+									type="submit"
+									className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:scale-[1.02] transition"
+									disabled={loading}
+								>
+									{loading ? 'Thinking…' : 'Get Answer'}
+								</Button>
+							</form>
+						</CardContent>
+					</Card>
+					{/*current Doubt*/}
+					<div className="lg:col-span-3 space-y-6">
+						{currentDoubt ? (
+							<motion.div
+								key={currentDoubt.id}
+								initial={{ opacity: 0, y: 20 }}
+								animate={{ opacity: 1, y: 0 }}
+								transition={{ delay: 1 * 0.08 }}
+							>
+								<Card className="glass-card border-purple-200/60 hover:shadow-lg transition-shadow">
+									<CardHeader>
+										<CardTitle className="text-lg">
+											{currentDoubt.question}
+										</CardTitle>
+										<CardDescription>
+											{currentDoubt.subject && `📘 ${currentDoubt.subject}`}{' '}
+											{currentDoubt.examType &&
+												` • 🎯 ${currentDoubt.examType}`}
+										</CardDescription>
+									</CardHeader>
 
-          {/* Doubt History */}
-          <div className="lg:col-span-3 space-y-6">
-            {doubts.length ? (
-              doubts.map((doubt, i) => (
-                <motion.div
-                  key={doubt.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.08 }}
-                >
-                  <Card className="glass-card border-purple-200/60 hover:shadow-lg transition-shadow">
-                    <CardHeader>
-                      <CardTitle className="text-lg">
-                        {doubt.question}
-                      </CardTitle>
-                      <CardDescription>
-                        {doubt.subject && `📘 ${doubt.subject}`}{" "}
-                        {doubt.examType && ` • 🎯 ${doubt.examType}`}
-                      </CardDescription>
-                    </CardHeader>
-
-                    <CardContent className="prose prose-sm max-w-none">
-                      <ReactMarkdown>{doubt.answer}</ReactMarkdown>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))
-            ) : (
-              <Card className="h-96 flex items-center justify-center glass-card border-purple-200/60">
-                <div className="text-center">
-                  <MessageCircle className="w-16 h-16 mx-auto mb-4 text-purple-300" />
-                  <p className="text-gray-600 font-medium">
-                    Ask your first doubt to begin ✨
-                  </p>
-                </div>
-              </Card>
-            )}
-          </div>
-        </div>
-      </motion.main>
-    </div>
-  );
+									<CardContent className="prose prose-sm max-w-none">
+										<ReactMarkdown>{currentDoubt.answer}</ReactMarkdown>
+									</CardContent>
+								</Card>
+							</motion.div>
+						) : (
+							<Card className="h-96 flex items-center justify-center glass-card border-purple-200/60">
+								<div className="text-center">
+									<MessageCircle className="w-16 h-16 mx-auto mb-4 text-purple-300" />
+									<p className="text-gray-600 font-medium">
+										Ask your first doubt to begin ✨
+									</p>
+								</div>
+							</Card>
+						)}
+					</div>
+					{/* Previous Doubts History */}
+					<div>
+						<Card className="lg:col-span-1 mt-6 glass-card border-blue-200/60 backdrop-blur-xl max-h-[400px] overflow-hidden flex flex-col">
+							<CardHeader className="pb-3">
+								<CardTitle className="text-md flex items-center gap-2">
+									<MessageCircle className="w-4 h-4 text-blue-600" />
+									Previous Doubts
+								</CardTitle>
+							</CardHeader>
+							<CardContent className="flex-1 overflow-y-auto space-y-2 custom-scrollbar">
+								{doubts.length > 0 ? (
+									doubts.map((doubt) => (
+										<button
+											key={doubt.doubt_id}
+											onClick={() =>
+												setCurrentDoubt({
+													id: doubt.doubt_id.toString(),
+													question: doubt.question,
+													answer: doubt.answer,
+													timestamp: new Date(), // Fallback timestamp
+												})
+											}
+											className="w-full text-left p-3 rounded-lg text-sm bg-white/50 hover:bg-white transition-colors border border-transparent hover:border-blue-200 group"
+										>
+											<p className="font-medium text-gray-700 line-clamp-2 group-hover:text-blue-600">
+												{doubt.question}
+											</p>
+										</button>
+									))
+								) : (
+									<p className="text-xs text-gray-500 text-center py-4">
+										No history yet
+									</p>
+								)}
+							</CardContent>
+						</Card>
+					</div>
+				</div>
+			</motion.main>
+		</div>
+	);
 }
