@@ -101,131 +101,54 @@ export async function generateStudyPlan(
 ): Promise<string> {
 	const dayCount = parseInt(days) || 30;
 
-	const prompt = `You are an expert exam preparation coach. Create an EXTREMELY DETAILED and COMPREHENSIVE ${dayCount}-day study plan for a student preparing for the ${exam} exam in ${subject}.
+	const prompt = `Act as a professional Academic Success Coach. Your task is to generate a comprehensive, high-density study plan and timetable.
 
-CRITICAL REQUIREMENTS:
-- Difficulty Level: ${difficulty.toUpperCase()} (Easy = lighter load, Medium = standard, Hard = intensive)
-- Number of Topics: ${topics}
-- Total Days Available: ${dayCount} days
+STUDENT PROFILE:
 - Subject: ${subject}
 - Exam: ${exam}
+- Topics to cover: ${topics}
+- Duration: ${dayCount} days
+- Daily Commitment: ${difficulty} hours per day
 
-CREATE A DETAILED PLAN WITH THE FOLLOWING STRUCTURE:
+STRUCTURAL CONSTRAINTS (CRITICAL FOR UI PARSING):
+- Use "## 1. OVERVIEW" for the introductory summary.
+- Use "## 2. TOPIC-WISE STUDY APPROACH" for the strategy section.
+- Use "## 3. DAILY ROUTINE" as the primary anchor for the schedule.
+- Use "## 4. RESOURCES AND MOCK TESTS" for the final logistics.
 
-## 1. EXECUTIVE SUMMARY
-- Brief overview of the entire plan
-- Key milestones
-- Expected coverage
+---
+SECTION REQUIREMENTS:
 
-## 2. WEEK-BY-WEEK BREAKDOWN
-For each week, include:
-- Week number and dates
-- Focus areas for that week
-- Primary topics
-- Learning objectives
-- Study hours per day
-- Key activities
+## 1. OVERVIEW
+Provide a detailed summary of the plan's methodology and the expected learning outcomes.
 
-## 3. DETAILED DAY-BY-DAY SCHEDULE
-For EACH DAY (create for all ${dayCount} days):
-- Date/Day number
-- Topics to study (with specific chapters/sections if applicable)
-- Time allocation (morning, afternoon, evening)
-- Practice problems (quantity and difficulty)
-- Key concepts to memorize
-- Real-world applications
-- Common mistakes to avoid
-- Quick revision points
+## 2. TOPIC-WISE STUDY APPROACH
+For each of the ${topics} topics, provide:
+- **Importance**: Exam weightage.
+- **Core Strategy**: How to tackle the theory vs. the numericals.
+- **Learning Objectives**: Specific goals for this topic.
 
-## 4. TOPIC-WISE STUDY APPROACH
-For each of the ${topics} topics:
-- Topic name
-- Why it's important for ${exam}
-- Learning objectives
-- Best resources
-- Core concepts
-- Practice tips
-- Expected time needed
+## 3. DAILY ROUTINE
+Each day strictly must have their own routine and must not be excluded, repetition of the same routine is not allowed
+For EACH day of the ${dayCount} days, you must provide (using "### Day [Number]" headers):
+### Day [Number]: [Specific Topic]
+- **Time Management & Break Schedule**: A slot-by-slot breakdown of the ${difficulty} hours, incorporating the Pomodoro technique (e.g., 50 mins study / 10 mins break).
+- **Tasks**: Explicit instructions and practice problem counts.
+- **Success Metric**: What the student must master before sleep.
 
-## 5. STUDY RESOURCES REQUIRED
-- Books and textbooks
-- Online resources and videos
-- Practice problem sets
-- Mock tests
-- Reference materials
-- Supplementary materials
+## 4. RESOURCES AND MOCK TESTS
+- **Study Resources Required**: List specific textbooks, YouTube channels, and online databases relevant to ${subject}.
+- **Mock Test Schedule**: A specific calendar of when to take full-length vs. sectional tests.
+- **Final Revision Strategy**: Instructions for the final 48 hours.
 
-## 6. REVISION STRATEGY
-- Spaced repetition schedule
-- Key concepts to review
-- Weekly revision targets
-- Monthly cumulative review
-- Last-minute revision (final 7 days)
-- Revision checklists
+INSTRUCTIONS:
+- Be verbose. Do not summarize.
+- Ensure every day is accounted for individually.
+- Maintain strict Markdown headers (## and ###) for parsing compatibility.
+- Do not skip a number of days in the day by day routine and have a detailed plan for the day, if the topics are too less for the amount of days mentioned tell the user so, and do not write anything for the days after that, but do not summarize a group of days to a few words
+- In case the number of topics is too small for the amount of days specified, refer to the syllabus of the exam they have mentioned and add topics related to the ones asked from the syllabus. The topics that the user has explicitly mentioned is to be used first and then the topics you might have chosen is to be used.
 
-## 7. MOCK TEST SCHEDULE
-- When to take mock tests
-- Which topics to focus in each mock
-- Performance tracking
-- Analysis of weak areas
-- Improvement strategies
-
-## 8. DAILY STUDY TIPS BY DIFFICULTY
-- Morning routine recommendations
-- Focus duration and breaks
-- Evening review process
-- Sleep and health tips
-- Motivation strategies
-
-## 9. TIME MANAGEMENT
-- Optimal study hours per day: ${difficulty === 'hard' ? '6-8 hours' : difficulty === 'medium' ? '4-6 hours' : '3-4 hours'}
-- Break schedule
-- Study peak hours
-- Buffer days for review
-- Rest days if any
-
-## 10. PROGRESS TRACKING
-- Weekly milestones
-- Self-assessment checkpoints
-- Performance metrics
-- Areas to focus if behind schedule
-
-## 11. EXAM DAY PREPARATION
-- Final revision points
-- Exam strategy
-- Time management during exam
-- Important formulas/facts to remember
-- Confidence boosters
-
-## 12. RESOURCE ALLOCATION BY TOPIC
-For each topic, specify:
-- Days dedicated
-- Study hours
-- Practice problems count
-- Mock test focus
-- Difficulty progression
-
-## ADDITIONAL IMPORTANT SECTIONS:
-- Weak area identification and recovery plan
-- How to handle exam anxiety
-- Group study vs solo study recommendations
-- Technology tools to use
-- Nutrition and fitness tips during preparation
-- Handling distractions
-- Building conceptual clarity vs rote learning
-
-INSTRUCTIONS FOR RESPONSE:
-- Be EXTREMELY SPECIFIC with dates and times
-- Include concrete numbers (e.g., "Solve 25 problems" not "Solve some problems")
-- Provide actionable daily tasks
-- Use clear formatting with headers and bullet points
-- Make it practical and implementable
-- Include scientific study techniques (Pomodoro, spaced repetition, etc.)
-- Adapt recommendations based on difficulty level: ${difficulty}
-- Focus on ${exam} exam requirements
-- Tailor content to ${subject} subject matter
-
-Create this plan now with maximum detail and practical applicability:`;
+Generate the structured plan now:`;
 
 	return generateWithGroq(prompt, {
 		temperature: 0.8,
