@@ -36,26 +36,31 @@ const buttonVariants = cva(
           hover:shadow-lg
           hover:-translate-y-[1px]
           active:translate-y-0
+          dark:from-indigo-500 dark:to-purple-500
+          dark:hover:shadow-lg
         `,
         destructive: `
-          bg-destructive text-white
+          bg-destructive text-destructive-foreground
           shadow-md
           hover:bg-destructive/90
           focus-visible:ring-destructive/30
         `,
         outline: `
           border border-border
-          bg-white/70 dark:bg-[#0b1020]/60
+          bg-white/70 dark:bg-card/60
           backdrop-blur-xl
           shadow-sm
+          text-foreground
           hover:bg-accent hover:text-accent-foreground
+          dark:hover:bg-accent/40
         `,
         secondary: `
           bg-secondary text-secondary-foreground
           hover:bg-secondary/80
+          dark:hover:bg-secondary/90
         `,
         ghost: `
-          bg-transparent
+          bg-transparent text-foreground
           hover:bg-accent/70 hover:text-accent-foreground
           dark:hover:bg-accent/40
         `,
