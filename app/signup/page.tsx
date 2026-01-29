@@ -177,31 +177,25 @@ export default function SignupPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
-          className="signup-card relative z-10"
+          className="signup-card relative z-10 w-full px-2 sm:px-0"
         >
           <Card
             ref={cardRef}
-            className="w-full max-w-md shadow-2xl border-white/20 dark:border-white/10 bg-white dark:bg-card/80 backdrop-blur-xl"
+            className="w-full max-w-sm shadow-2xl border-white/20 dark:border-white/10 bg-white dark:bg-card/80 backdrop-blur-xl"
           >
-            <CardHeader className="space-y-3 text-center">
-              <CardTitle className="text-3xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-blue-600 dark:from-purple-400 dark:to-blue-400 bg-clip-text text-transparent">
+            <CardHeader className="space-y-2 sm:space-y-3 text-center px-4 sm:px-6 pt-6 sm:pt-8">
+              <CardTitle className="text-2xl sm:text-3xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-blue-600 dark:from-purple-400 dark:to-blue-400 bg-clip-text text-transparent">
                 Create your account
               </CardTitle>
 
-              <CardDescription className="text-muted-foreground">
+              <CardDescription className="text-xs sm:text-sm text-muted-foreground">
                 Join AI Study Buddy and start your learning journey
               </CardDescription>
             </CardHeader>
 
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
+            <CardContent className="px-4 sm:px-6 pb-6">
+              <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
                 {[
-                  {
-                    id: "fullName",
-                    label: "Full Name",
-                    type: "text",
-                    placeholder: "Your name",
-                  },
                   {
                     id: "email",
                     label: "Email Address",
@@ -221,10 +215,10 @@ export default function SignupPage() {
                     placeholder: "Confirm password",
                   },
                 ].map((field) => (
-                  <div key={field.id} className="space-y-1.5">
+                  <div key={field.id} className="space-y-1">
                     <label
                       htmlFor={field.id}
-                      className="text-sm font-medium text-foreground"
+                      className="text-xs sm:text-sm font-medium text-foreground"
                     >
                       {field.label}
                     </label>
@@ -236,20 +230,21 @@ export default function SignupPage() {
                       value={(formData as any)[field.id]}
                       onChange={handleInputChange}
                       required
+                      className="h-10 sm:h-9 text-sm"
                     />
                   </div>
                 ))}
 
                 <Button
                   type="submit"
-                  className="w-full transition-all duration-300 hover:scale-[1.02]"
+                  className="w-full h-10 sm:h-9 text-sm transition-all duration-300 hover:scale-[1.02]"
                   disabled={loading}
                 >
                   {loading ? "Creating account…" : "Create Account"}
                 </Button>
               </form>
 
-              <div className="mt-6 text-center text-sm">
+              <div className="mt-4 sm:mt-6 text-center text-xs sm:text-sm">
                 <span className="text-muted-foreground">
                   Already have an account?
                 </span>{" "}

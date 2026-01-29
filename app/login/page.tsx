@@ -142,23 +142,23 @@ export default function LoginPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
-          className="login-card relative z-10"
+          className="login-card relative z-10 w-full px-2 sm:px-0"
         >
-          <Card className="w-full max-w-md shadow-2xl border-white/20 dark:border-white/10 bg-white dark:bg-card/80 backdrop-blur-xl">
-            <CardHeader className="space-y-2 text-center">
-              <CardTitle className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 dark:from-purple-400 dark:to-blue-400 bg-clip-text text-transparent">
+          <Card className="w-full max-w-sm shadow-2xl border-white/20 dark:border-white/10 bg-white dark:bg-card/80 backdrop-blur-xl">
+            <CardHeader className="space-y-2 text-center px-4 sm:px-6 pt-6 sm:pt-8">
+              <CardTitle className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 dark:from-purple-400 dark:to-blue-400 bg-clip-text text-transparent">
                 AI Study Buddy
               </CardTitle>
-              <CardDescription className="text-muted-foreground">
+              <CardDescription className="text-sm sm:text-base text-muted-foreground">
                 Sign in to your account
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-4 sm:px-6 pb-6">
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <label
                     htmlFor="email"
-                    className="text-sm font-medium text-foreground"
+                    className="text-xs sm:text-sm font-medium text-foreground"
                   >
                     Email Address
                   </label>
@@ -170,13 +170,14 @@ export default function LoginPage() {
                     required
                     value={formData.email}
                     onChange={handleInputChange}
+                    className="h-10 sm:h-9 text-sm"
                   />
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <label
                     htmlFor="password"
-                    className="text-sm font-medium text-foreground"
+                    className="text-xs sm:text-sm font-medium text-foreground"
                   >
                     Password
                   </label>
@@ -188,15 +189,20 @@ export default function LoginPage() {
                     required
                     value={formData.password}
                     onChange={handleInputChange}
+                    className="h-10 sm:h-9 text-sm"
                   />
                 </div>
 
-                <Button type="submit" className="w-full" disabled={loading}>
+                <Button
+                  type="submit"
+                  className="w-full h-10 sm:h-9 text-sm"
+                  disabled={loading}
+                >
                   {loading ? "Signing in..." : "Sign In"}
                 </Button>
               </form>
 
-              <div className="mt-6 text-center text-sm">
+              <div className="mt-4 sm:mt-6 text-center text-xs sm:text-sm">
                 <span className="text-muted-foreground">
                   Don't have an account?{" "}
                 </span>
