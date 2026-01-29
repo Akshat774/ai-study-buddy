@@ -36,7 +36,7 @@ export async function POST(request: Request) {
 
 interface StudyPlan {
 	generalInfo: string;
-	dailyRoutines: string[];
+	dailyRoutines: Array<{ dayNumber: number; title: string; content: string }>;
 }
 
 function parseStudyPlan(markdownInput: string): StudyPlan {
@@ -55,12 +55,32 @@ function parseStudyPlan(markdownInput: string): StudyPlan {
 	const resourcesContent = afterDailySplit[1] || '';
 
 	// 2. Extract individual days using the ### Day [Number] header
-	const daySegments = dailyContent
-		.split(/### Day \d+:/)
-		.filter((s) => s.trim() !== '');
+	const dayRegex = /### Day (\d+):\s*([^\n]*)\n([\s\S]*?)(?=### Day \d+:|$)/g;
+	const dailyRoutines: Array<{ dayNumber: number; title: string; content: string }> = [];
 
-	// Re-attach the Day titles if needed, or keep clean
-	const dailyRoutines = daySegments.map((segment) => segment.trim());
+	let match;
+	while ((match = dayRegex.exec(dailyContent)) !== null) {
+		dailyRoutines.push({
+			dayNumber: parseInt(match[1]),
+			title: `Day ${match[1]}: ${match[2].trim() || 'Study'}`,
+			content: match[3].trim(),
+		});
+	}
+
+	// If regex didn't capture, fall back to simple split
+	if (dailyRoutines.length === 0) {
+		const daySegments = dailyContent
+			.split(/### Day \d+:/)
+			.filter((s) => s.trim() !== '');
+
+		dailyRoutines.push(
+			...daySegments.map((segment, idx) => ({
+				dayNumber: idx + 1,
+				title: `Day ${idx + 1}: Study`,
+				content: segment.trim(),
+			}))
+		);
+	}
 
 	// 3. Construct General Info object (Overview + Strategy + Resources)
 	const generalInfo = (

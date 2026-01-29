@@ -20,6 +20,10 @@ import {
   Moon,
   User,
   Settings,
+  Trophy,
+  HelpCircle,
+  Bell,
+  Mail,
 } from "lucide-react";
 
 export function DashboardNav() {
@@ -30,6 +34,7 @@ export function DashboardNav() {
   const [mounted, setMounted] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const drawerRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -37,7 +42,19 @@ export function DashboardNav() {
 
   useEffect(() => {
     setMounted(true);
+    // Fetch notifications on mount
+    fetchNotifications();
   }, []);
+
+  const fetchNotifications = async () => {
+    try {
+      const response = await fetch('/api/send-notification');
+      const data = await response.json();
+      setUnreadCount(data.unreadCount || 0);
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    }
+  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -49,6 +66,7 @@ export function DashboardNav() {
     { href: "/study-planner", label: "Study Planner", icon: Brain },
     { href: "/doubt-solver", label: "Doubt Solver", icon: FileText },
     { href: "/notes-summarizer", label: "Notes Summarizer", icon: FileText },
+    { href: "/quiz", label: "Quizzes", icon: Trophy },
   ];
 
   /* 🌊 SAFE wave animation */
@@ -150,6 +168,21 @@ export function DashboardNav() {
 
             {/* Right */}
             <div className="flex items-center gap-2">
+              {/* Notifications Bell */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => router.push("/notifications")}
+                className="relative hover:bg-purple-100/50 dark:hover:bg-purple-900/30 transition"
+              >
+                <Bell size={18} />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </Button>
+
               {/* Theme toggle (SAFE) */}
               {mounted && (
                 <Button
@@ -171,7 +204,7 @@ export function DashboardNav() {
               <div className="relative">
                 <button
                   onClick={() => setProfileOpen(!profileOpen)}
-                  className="h-9 w-9 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 text-white font-semibold shadow-lg"
+                  className="h-10 w-10 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 text-white font-semibold shadow-lg hover:scale-110 transition-transform duration-300 flex items-center justify-center ring-2 ring-indigo-400/50"
                 >
                   U
                 </button>
@@ -189,6 +222,18 @@ export function DashboardNav() {
                       className="flex w-full items-center gap-2 px-4 py-2 text-sm hover:bg-muted"
                     >
                       <Settings size={16} /> Settings
+                    </button>
+                    <button
+                      onClick={() => router.push("/about")}
+                      className="flex w-full items-center gap-2 px-4 py-2 text-sm hover:bg-muted"
+                    >
+                      <HelpCircle size={16} /> About
+                    </button>
+                    <button
+                      onClick={() => router.push("/contact")}
+                      className="flex w-full items-center gap-2 px-4 py-2 text-sm hover:bg-muted"
+                    >
+                      <Mail size={16} /> Contact
                     </button>
                     <button
                       onClick={handleLogout}
@@ -282,6 +327,42 @@ export function DashboardNav() {
                     Toggle Theme
                   </Button>
                 )}
+
+                <Button
+                  variant="outline"
+                  className="w-full gap-2"
+                  onClick={() => {
+                    router.push("/notifications");
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  <Bell size={16} />
+                  Notifications
+                </Button>
+
+                <Button
+                  variant="outline"
+                  className="w-full gap-2"
+                  onClick={() => {
+                    router.push("/about");
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  <HelpCircle size={16} />
+                  About
+                </Button>
+
+                <Button
+                  variant="outline"
+                  className="w-full gap-2"
+                  onClick={() => {
+                    router.push("/contact");
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  <Mail size={16} />
+                  Contact
+                </Button>
 
                 <Button
                   variant="outline"

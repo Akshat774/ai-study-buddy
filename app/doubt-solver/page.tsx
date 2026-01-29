@@ -137,7 +137,7 @@ export default function DoubtSolverPage() {
 	};
 
 	return (
-		<div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+		<div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900">
 			<DashboardNav />
 
 			{/* Parallax background accents */}
@@ -240,8 +240,74 @@ export default function DoubtSolverPage() {
 										</CardDescription>
 									</CardHeader>
 
-									<CardContent className="prose prose-sm max-w-none">
-										<ReactMarkdown>{currentDoubt.answer}</ReactMarkdown>
+									<CardContent className="pt-6">
+										<div className="bg-gradient-to-br from-purple-50 to-blue-50 dark:from-slate-800 dark:to-slate-700 rounded-lg p-6 border border-purple-200/40 dark:border-purple-500/30 prose prose-sm max-w-none">
+											<div className="text-gray-800 dark:text-gray-100">
+												<div className="space-y-3">
+													<ReactMarkdown
+														components={{
+															h1: ({ node, ...props }) => <h1 className="text-2xl font-bold text-purple-700 dark:text-purple-300 mt-4 mb-2" {...props} />,
+															h2: ({ node, ...props }) => <h2 className="text-xl font-bold text-purple-600 dark:text-purple-400 mt-3 mb-2" {...props} />,
+															h3: ({ node, ...props }) => <h3 className="text-lg font-bold text-purple-600 dark:text-purple-400 mt-2 mb-1" {...props} />,
+															p: ({ node, ...props }) => <p className="text-gray-700 dark:text-gray-300 leading-relaxed" {...props} />,
+															li: ({ node, ...props }) => <li className="text-gray-700 dark:text-gray-300 ml-4" {...props} />,
+															code: ({ node, ...props }) => <code className="bg-purple-100 dark:bg-purple-900 px-2 py-1 rounded text-purple-900 dark:text-purple-100 font-mono text-sm" {...props} />,
+															blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-purple-400 pl-4 italic text-gray-600 dark:text-gray-400" {...props} />,
+														}}
+													>
+														{currentDoubt.answer}
+													</ReactMarkdown>
+												</div>
+											</div>
+										</div>
+
+										{/* Video Recommendations */}
+										<div className="mt-6 pt-6 border-t border-purple-200/40 dark:border-purple-500/30">
+											<h3 className="text-lg font-bold text-purple-700 dark:text-purple-300 mb-4 flex items-center gap-2">
+												📺 Recommended Videos
+											</h3>
+											<div className="grid grid-cols-1 gap-3">
+												{[
+													{
+														title: 'Understanding Core Concepts',
+														channel: 'Physics Academy',
+														duration: '12:34',
+													},
+													{
+														title: 'Advanced Problem Solving',
+														channel: 'Math Mastery',
+														duration: '18:45',
+													},
+													{
+														title: 'In-Depth Explanation',
+														channel: 'Science Hub',
+														duration: '25:20',
+													},
+												].map((video, idx) => (
+													<a
+														key={idx}
+														href="#"
+														target="_blank"
+														rel="noopener noreferrer"
+														className="p-3 rounded-lg bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border border-purple-200/40 dark:border-purple-500/30 hover:shadow-md transition-all hover:border-purple-400 group"
+													>
+														<div className="flex items-start gap-3">
+															<div className="w-12 h-12 rounded bg-gradient-to-br from-purple-500 to-blue-500 flex-shrink-0 flex items-center justify-center text-white font-bold">
+																▶
+															</div>
+															<div className="flex-1 min-w-0">
+																<p className="font-semibold text-sm text-gray-800 dark:text-gray-200 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition line-clamp-2">
+																	{video.title}
+																</p>
+																<p className="text-xs text-muted-foreground mt-1">
+																	{video.channel} • {video.duration}
+																</p>
+															</div>
+														</div>
+													</a>
+												))}
+											</div>
+										</div>
 									</CardContent>
 								</Card>
 							</motion.div>

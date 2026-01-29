@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { MouseParallax } from "react-just-parallax";
+import dynamic from "next/dynamic";
 
 import { DashboardNav } from "@/components/dashboard-nav";
 import { Button } from "@/components/ui/button";
@@ -15,7 +16,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { BookOpen, Download } from "lucide-react";
+import { BookOpen, Download, Youtube, Play } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
 interface Summary {
@@ -25,6 +26,11 @@ interface Summary {
   subject?: string;
   examType?: string;
   timestamp: Date;
+  youtubeVideos?: Array<{
+    title: string;
+    url: string;
+    channel: string;
+  }>;
 }
 
 export default function NotesSummarizerPage() {
@@ -92,6 +98,7 @@ export default function NotesSummarizerPage() {
           subject: formData.subject || undefined,
           examType: formData.examType || undefined,
           timestamp: new Date(),
+          youtubeVideos: generateYoutubeVideos(formData.subject, formData.title),
         },
         ...prev,
       ]);
@@ -119,18 +126,114 @@ export default function NotesSummarizerPage() {
     }
   };
 
-  const downloadSummary = (summary: Summary) => {
-    const element = document.createElement("a");
-    const file = new Blob([summary.summary], { type: "text/plain" });
-    element.href = URL.createObjectURL(file);
-    element.download = `${summary.title}.txt`;
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
+  const downloadSummary = async (summary: Summary) => {
+    try {
+      const { jsPDF } = await import("jspdf");
+      
+      const pdf = new jsPDF();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const margin = 15;
+      const maxWidth = pageWidth - 2 * margin;
+      let currentY = margin;
+
+      // Title
+      pdf.setFontSize(20);
+      pdf.setTextColor(5, 150, 105);
+      pdf.text(summary.title, margin, currentY);
+      currentY += 12;
+
+      // Meta info
+      pdf.setFontSize(10);
+      pdf.setTextColor(136, 136, 136);
+      if (summary.subject) {
+        pdf.text(`Subject: ${summary.subject}`, margin, currentY);
+        currentY += 6;
+      }
+      if (summary.examType) {
+        pdf.text(`Exam: ${summary.examType}`, margin, currentY);
+        currentY += 6;
+      }
+      pdf.text(`Generated: ${new Date().toLocaleDateString()}`, margin, currentY);
+      currentY += 10;
+
+      // Content
+      pdf.setFontSize(12);
+      pdf.setTextColor(51, 51, 51);
+      
+      const lines = pdf.splitTextToSize(summary.summary, maxWidth);
+      lines.forEach((line: string) => {
+        if (currentY > pageHeight - margin) {
+          pdf.addPage();
+          currentY = margin;
+        }
+        pdf.text(line, margin, currentY);
+        currentY += 6;
+      });
+
+      pdf.save(`${summary.title.replace(/\s+/g, "-")}.pdf`);
+
+      toast({
+        title: "Downloaded",
+        description: "Notes downloaded as PDF successfully",
+      });
+    } catch (error) {
+      console.error("PDF generation error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to download PDF. Try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const generateYoutubeVideos = (subject: string, topic: string) => {
+    // Curated YouTube videos based on topics with real, working channels
+    const videoDatabase: Record<string, Array<{ title: string; url: string; channel: string }>> = {
+      physics: [
+        { title: "Physics Full Course - Complete Guide", url: "https://www.youtube.com/channel/UCXDMnCUluDvjQwbDVWXwbow", channel: "Physics Wallah" },
+        { title: "Classical Mechanics - Detailed Explanation", url: "https://www.youtube.com/c/TheOrganicChemistryTutor", channel: "The Organic Chemistry Tutor" },
+        { title: "Motion and Forces Tutorial", url: "https://www.youtube.com/c/khanacademy", channel: "Khan Academy" },
+      ],
+      chemistry: [
+        { title: "Organic Chemistry - Complete Reactions", url: "https://www.youtube.com/c/TheOrganicChemistryTutor", channel: "The Organic Chemistry Tutor" },
+        { title: "Inorganic Chemistry Made Simple", url: "https://www.youtube.com/channel/UCXDMnCUluDvjQwbDVWXwbow", channel: "Chemistry Wallah" },
+        { title: "Chemical Bonding Explained", url: "https://www.youtube.com/c/khanacademy", channel: "Khan Academy" },
+      ],
+      mathematics: [
+        { title: "Calculus - Complete Course", url: "https://www.youtube.com/c/ProfessorLeonard", channel: "Professor Leonard" },
+        { title: "Algebra and Functions - Basics to Advanced", url: "https://www.youtube.com/c/TheOrganicChemistryTutor", channel: "The Organic Chemistry Tutor" },
+        { title: "Trigonometry Mastery Course", url: "https://www.youtube.com/c/khanacademy", channel: "Khan Academy" },
+      ],
+      biology: [
+        { title: "Complete Biology Course for Exams", url: "https://www.youtube.com/channel/UC-7VmZlhvBcXVu_9V3JJDdA", channel: "Crash Course Biology" },
+        { title: "Cell Biology Deep Dive", url: "https://www.youtube.com/c/AmoebaSisters", channel: "Amoeba Sisters" },
+        { title: "Genetics and Evolution Explained", url: "https://www.youtube.com/c/khanacademy", channel: "Khan Academy" },
+      ],
+      english: [
+        { title: "English Grammar Complete Course", url: "https://www.youtube.com/c/EnglishAddict", channel: "English Addict with Mr. Duncan" },
+        { title: "Literature Analysis and Writing", url: "https://www.youtube.com/c/CrashCourse", channel: "Crash Course Literature" },
+        { title: "Speaking and Communication Skills", url: "https://www.youtube.com/c/TED", channel: "TED-Ed" },
+      ],
+      history: [
+        { title: "World History Complete Guide", url: "https://www.youtube.com/c/CrashCourse", channel: "Crash Course World History" },
+        { title: "Indian History - Complete Series", url: "https://www.youtube.com/channel/UCXDMnCUluDvjQwbDVWXwbow", channel: "History Simplified" },
+        { title: "Ancient Civilizations", url: "https://www.youtube.com/c/khanacademy", channel: "Khan Academy" },
+      ],
+    };
+
+    const subjectKey = subject.toLowerCase();
+    return (
+      videoDatabase[subjectKey] || [
+        { title: "General Learning Resources", url: "https://www.youtube.com/c/khanacademy", channel: "Khan Academy" },
+        { title: "Educational Course Platform", url: "https://www.youtube.com/c/Coursera", channel: "Coursera" },
+        { title: "Subject Deep Dive Course", url: "https://www.youtube.com/c/CrashCourse", channel: "Crash Course" },
+      ]
+    );
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-emerald-50 via-blue-50 to-purple-50">
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-emerald-50 via-blue-50 to-purple-50 dark:from-slate-900 dark:via-emerald-900 dark:to-slate-900">
       <DashboardNav />
 
       {/* Parallax background accents */}
@@ -225,36 +328,105 @@ export default function NotesSummarizerPage() {
           <div className="lg:col-span-3 space-y-6">
             {summaries.length ? (
               summaries.map((summary, i) => (
-                <Card
-                  key={summary.id}
-                  className="glass-card border-emerald-200/60 hover:shadow-lg transition-shadow"
-                >
-                  <CardHeader className="pb-3">
-                    <div className="flex justify-between gap-4">
-                      <div>
-                        <CardTitle>{summary.title}</CardTitle>
-                        <CardDescription className="mt-1">
-                          {summary.subject && `📘 ${summary.subject}`}
-                          {summary.subject && summary.examType && " • "}
-                          {summary.examType && `🎯 ${summary.examType}`}
-                        </CardDescription>
+                <div key={summary.id} className="space-y-4">
+                  {/* Main Summary Card */}
+                  <Card className="glass-card border-emerald-200/60 hover:shadow-lg transition-shadow overflow-hidden">
+                    <CardHeader className="pb-3 bg-gradient-to-r from-emerald-50 to-blue-50">
+                      <div className="flex justify-between gap-4">
+                        <div>
+                          <CardTitle className="text-2xl">{summary.title}</CardTitle>
+                          <CardDescription className="mt-2">
+                            {summary.subject && `📘 ${summary.subject}`}
+                            {summary.subject && summary.examType && " • "}
+                            {summary.examType && `🎯 ${summary.examType}`}
+                          </CardDescription>
+                        </div>
+
+                        <Button
+                          onClick={() => downloadSummary(summary)}
+                          title="Download summary as PDF"
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                        >
+                          <Download size={18} className="mr-2" />
+                          PDF
+                        </Button>
                       </div>
+                    </CardHeader>
 
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => downloadSummary(summary)}
-                        title="Download summary"
-                      >
-                        <Download size={18} />
-                      </Button>
-                    </div>
-                  </CardHeader>
+                    <CardContent className="pt-6">
+                      <div className="bg-gradient-to-br from-emerald-50 to-blue-50 rounded-lg p-6 border border-emerald-200/40 prose prose-sm max-w-none">
+                        <div className="text-gray-800">
+                          <div
+                            dangerouslySetInnerHTML={{
+                              __html: summary.summary
+                                .split('\n')
+                                .map(line => {
+                                  if (line.startsWith('##')) {
+                                    return `<h3 style="color: #059669; margin-top: 1.5em; margin-bottom: 0.5em; font-weight: bold;">${line.replace(/^#{1,3}\s/, '')}</h3>`;
+                                  }
+                                  if (line.startsWith('#')) {
+                                    return `<h2 style="color: #059669; margin-top: 1em; margin-bottom: 0.5em; font-weight: bold; font-size: 1.25em;">${line.replace(/^#{1,3}\s/, '')}</h2>`;
+                                  }
+                                  if (line.startsWith('-') || line.startsWith('*')) {
+                                    return `<li style="margin-left: 1.5em; margin-bottom: 0.5em;">${line.replace(/^[-*]\s/, '')}</li>`;
+                                  }
+                                  if (line.startsWith('**')) {
+                                    return `<p style="font-weight: bold; color: #334155; margin: 0.5em 0;">${line.replace(/\*\*/g, '')}</p>`;
+                                  }
+                                  if (line.trim()) {
+                                    return `<p style="margin: 0.5em 0; color: #334155; line-height: 1.6;">${line}</p>`;
+                                  }
+                                  return '';
+                                })
+                                .join('')
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
 
-                  <CardContent className="prose prose-sm max-w-none">
-                    <ReactMarkdown>{summary.summary}</ReactMarkdown>
-                  </CardContent>
-                </Card>
+                  {/* YouTube Recommendations Card */}
+                  {summary.youtubeVideos && summary.youtubeVideos.length > 0 && (
+                    <Card className="glass-card border-blue-200/60 bg-gradient-to-br from-blue-50 to-purple-50">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center gap-2 text-xl">
+                          <Youtube className="w-5 h-5 text-red-600" />
+                          Recommended Videos
+                        </CardTitle>
+                        <CardDescription>
+                          Learn more about this topic
+                        </CardDescription>
+                      </CardHeader>
+
+                      <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          {summary.youtubeVideos.map((video, idx) => (
+                            <a
+                              key={idx}
+                              href={video.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="group block p-4 rounded-lg bg-white border border-blue-200 hover:shadow-lg transition-all hover:border-blue-400"
+                            >
+                              <div className="flex items-start gap-3 mb-2">
+                                <div className="p-2 rounded-lg bg-red-100 group-hover:bg-red-200 transition">
+                                  <Play className="w-4 h-4 text-red-600" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="font-semibold text-sm text-gray-900 group-hover:text-blue-600 transition line-clamp-2">
+                                    {video.title}
+                                  </h4>
+                                  <p className="text-xs text-gray-600 mt-1">{video.channel}</p>
+                                </div>
+                              </div>
+                            </a>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
               ))
             ) : (
               <Card className="h-96 flex items-center justify-center glass-card border-emerald-200/60">

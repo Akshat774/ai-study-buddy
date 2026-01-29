@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { gsap } from 'gsap';
 import { MouseParallax } from 'react-just-parallax';
+import dynamic from 'next/dynamic';
 
 import { DashboardNav } from '@/components/dashboard-nav';
 import { Button } from '@/components/ui/button';
@@ -81,6 +82,10 @@ export default function StudyPlannerPage() {
 	const [error, setError] = useState<string | null>(null);
 	const [saving, setSaving] = useState(false);
 	const [title, setTitle] = useState('');
+	const [isCompleted, setIsCompleted] = useState(false);
+	const [pdfFile, setPdfFile] = useState<File | null>(null);
+	const [pdfName, setPdfName] = useState('');
+	const [uploadingPdf, setUploadingPdf] = useState(false);
 
 	/* ---------- GSAP page entrance ---------- */
 	useEffect(() => {
@@ -96,6 +101,136 @@ export default function StudyPlannerPage() {
 	) => {
 		const { name, value } = e.target;
 		setFormData((prev) => ({ ...prev, [name]: value }));
+	};
+
+	const handlePdfChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0];
+		if (file) {
+			// Validate file size (50MB max)
+			if (file.size > 50 * 1024 * 1024) {
+				toast({
+					title: 'File too large',
+					description: 'PDF must be less than 50MB',
+					variant: 'destructive',
+				});
+				return;
+			}
+
+			// Validate file type
+			if (!file.type.includes('pdf') && !file.type.includes('image')) {
+				toast({
+					title: 'Invalid file type',
+					description: 'Please upload a PDF or image file',
+					variant: 'destructive',
+				});
+				return;
+			}
+
+			setPdfFile(file);
+			setPdfName(file.name);
+			toast({
+				title: 'File selected',
+				description: `${file.name} ready for upload`,
+			});
+		}
+	};
+
+	const downloadStudyPlan = async () => {
+		if (!plan) return;
+		
+		try {
+			const { jsPDF } = await import('jspdf');
+			
+			const pdf = new jsPDF();
+			const pageHeight = pdf.internal.pageSize.getHeight();
+			const pageWidth = pdf.internal.pageSize.getWidth();
+			const margin = 15;
+			const maxWidth = pageWidth - 2 * margin;
+			let currentY = margin;
+
+			// Title
+			pdf.setFontSize(18);
+			pdf.setTextColor(102, 126, 234);
+			pdf.text(title, margin, currentY);
+			currentY += 12;
+
+			// Generated date
+			pdf.setFontSize(10);
+			pdf.setTextColor(136, 136, 136);
+			pdf.text(`Generated on ${new Date().toLocaleDateString()}`, margin, currentY);
+			currentY += 10;
+
+			// General Info Section
+			pdf.setFontSize(14);
+			pdf.setTextColor(102, 126, 234);
+			pdf.text('General Information', margin, currentY);
+			currentY += 8;
+
+			pdf.setFontSize(11);
+			pdf.setTextColor(51, 51, 51);
+			const generalLines = pdf.splitTextToSize(plan.generalInfo, maxWidth);
+			generalLines.forEach((line: string) => {
+				if (currentY > pageHeight - margin - 10) {
+					pdf.addPage();
+					currentY = margin;
+				}
+				pdf.text(line, margin, currentY);
+				currentY += 5;
+			});
+
+			currentY += 5;
+
+			// Daily Routines
+			plan.dailyRoutines.forEach((day, index) => {
+				if (currentY > pageHeight - margin - 20) {
+					pdf.addPage();
+					currentY = margin;
+				}
+
+				pdf.setFontSize(13);
+				pdf.setTextColor(102, 126, 234);
+				pdf.text(`Day ${index + 1}`, margin, currentY);
+				currentY += 8;
+
+				pdf.setFontSize(10);
+				pdf.setTextColor(51, 51, 51);
+				const dayLines = pdf.splitTextToSize(day.toString(), maxWidth);
+				dayLines.forEach((line: string) => {
+					if (currentY > pageHeight - margin - 10) {
+						pdf.addPage();
+						currentY = margin;
+					}
+					pdf.text(line, margin, currentY);
+					currentY += 5;
+				});
+
+				currentY += 8;
+			});
+
+			pdf.save(`${title.replace(/\s+/g, '-')}.pdf`);
+			
+			toast({
+				title: 'Downloaded',
+				description: 'Study plan downloaded as PDF successfully',
+			});
+		} catch (error) {
+			console.error('PDF generation error:', error);
+			toast({
+				title: 'Error',
+				description: 'Failed to download PDF. Try again.',
+				variant: 'destructive',
+			});
+		}
+	};
+
+	const handleCompletionToggle = () => {
+		setIsCompleted(!isCompleted);
+		toast({
+			title: isCompleted ? 'Incomplete' : 'Completed',
+			description: isCompleted 
+				? 'Study plan marked as incomplete' 
+				: 'Study plan marked as completed',
+		});
 	};
 
 	const savePlan = async () => {
@@ -189,7 +324,7 @@ export default function StudyPlannerPage() {
 	};
 
 	return (
-		<div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50">
+		<div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900">
 			<DashboardNav />
 
 			{/* Parallax ambient blobs */}
@@ -299,6 +434,34 @@ export default function StudyPlannerPage() {
 											<option value="6-8 hours">Hard (6–8 hrs/day)</option>
 										</select>
 
+										<div className="relative border-2 border-dashed border-purple-300 rounded-lg p-6 text-center bg-purple-50/50 dark:bg-purple-900/20 cursor-pointer hover:bg-purple-100/50 dark:hover:bg-purple-900/30 transition group">
+											<input
+												type="file"
+												accept=".pdf,.jpg,.jpeg,.png"
+												className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+												onChange={handlePdfChange}
+											/>
+											<div className="space-y-2">
+												{pdfName ? (
+													<div className="flex items-center justify-center gap-2">
+														<CheckCircle className="w-5 h-5 text-emerald-500" />
+														<p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+															{pdfName}
+														</p>
+													</div>
+												) : (
+													<>
+														<p className="text-sm font-medium text-purple-700 dark:text-purple-300 group-hover:text-purple-800 dark:group-hover:text-purple-200 transition">
+															📄 Upload Schedule/Notes (Optional)
+														</p>
+														<p className="text-xs text-muted-foreground">
+															PDF, JPG, or PNG (Max 50MB)
+														</p>
+													</>
+												)}
+											</div>
+										</div>
+
 										<Button
 											type="submit"
 											disabled={loading}
@@ -344,56 +507,137 @@ export default function StudyPlannerPage() {
 						)}
 
 						{plan && (
-							<motion.div variants={itemVariants}>
-								<Card className="glass-card border-purple-200/60">
+							<motion.div variants={itemVariants} className="space-y-8">
+								{/* Header Card */}
+								<Card className="glass-card border-purple-200/60 dark:border-purple-500/30">
 									<CardHeader>
 										<CardTitle className="flex items-center gap-2">
 											<CheckCircle className="w-5 h-5 text-green-600" />
 											Your Personalized Study Plan
 										</CardTitle>
 										<CardDescription>
-											{formData.exam} • {formData.subject} • {formData.numDays}{' '}
-											days
+											{formData.exam} • {formData.subject} • {formData.numDays} days
 										</CardDescription>
 									</CardHeader>
+								</Card>
 
+												{/* Day Cards Grid - 2 columns */}
+								<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 									{plan.dailyRoutines.map((day, i) => (
-										<Card key={i} className="m-2">
-											<CardTitle className="flex items-center gap-2 m-2">
-												Day {i + 1}
-											</CardTitle>
-											<CardContent>
-												<div className="rounded-xl border border-purple-200/50 bg-gradient-to-br from-purple-50 to-blue-50 p-6 prose prose-sm max-w-none">
-													<ReactMarkdown>{day}</ReactMarkdown>
-												</div>
-											</CardContent>
-										</Card>
-									))}
-
-									<CardContent>
-										<div className="rounded-xl border border-purple-200/50 bg-gradient-to-br from-purple-50 to-blue-50 p-6 prose prose-sm max-w-none">
-											<ReactMarkdown>{plan.generalInfo}</ReactMarkdown>
-										</div>
-										<Button
-											type="submit"
-											disabled={saving}
-											onClick={savePlan}
-											className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:scale-[1.02] transition"
+										<motion.div
+											key={i}
+											initial={{ opacity: 0, y: 20 }}
+											animate={{ opacity: 1, y: 0 }}
+											transition={{ delay: i * 0.05 }}
 										>
-											{saving ? (
-												<span className="flex items-center gap-2">
-													<Loader2 className="w-4 h-4 animate-spin" />
-													Saving...
-												</span>
-											) : (
-												<span className="flex items-center gap-2">
-													<Sparkles className="w-4 h-4" />
-													Save Plan
-												</span>
-											)}
-										</Button>
+											<Card className="glass-card border-purple-200/60 dark:border-purple-500/30 hover:shadow-xl transition-all hover:-translate-y-1 cursor-pointer group overflow-hidden">
+												<CardHeader className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/30 dark:to-blue-900/30">
+													<CardTitle className="flex items-center gap-3 text-purple-700 dark:text-purple-300">
+														<div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center text-white text-sm font-bold">
+															{day.dayNumber}
+														</div>
+														<span>{day.title}</span>
+													</CardTitle>
+												</CardHeader>
+												<CardContent className="pt-6">
+													<div className="space-y-3 mb-4">
+														<p className="text-sm text-muted-foreground line-clamp-3">
+															{day.content.substring(0, 150)}...
+														</p>
+													</div>
+													<Button
+														variant="outline"
+														className="w-full group-hover:bg-purple-50 dark:group-hover:bg-purple-900/30 transition"
+													>
+														View Details
+													</Button>
+												</CardContent>
+											</Card>
+										</motion.div>
+									))}
+								</div>
+
+								{/* General Info Section */}
+								<Card className="glass-card border-purple-200/60 dark:border-purple-500/30">
+									<CardHeader>
+										<CardTitle className="text-purple-700 dark:text-purple-300">
+											📖 General Information
+										</CardTitle>
+										<CardDescription>
+											Key study notes and resources
+										</CardDescription>
+									</CardHeader>
+									<CardContent>
+										<div className="rounded-xl border border-purple-200/40 dark:border-purple-500/30 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-slate-800 dark:to-slate-700 p-6">
+											<div className="text-gray-800 dark:text-gray-100 prose dark:prose-invert max-w-none">
+												<ReactMarkdown
+													components={{
+														h1: ({ node, ...props }) => <h1 className="text-3xl font-bold text-purple-800 dark:text-purple-200 mt-6 mb-3 first:mt-0" {...props} />,
+														h2: ({ node, ...props }) => <h2 className="text-2xl font-bold text-purple-700 dark:text-purple-300 mt-5 mb-2" {...props} />,
+														h3: ({ node, ...props }) => <h3 className="text-xl font-bold text-purple-600 dark:text-purple-400 mt-4 mb-2" {...props} />,
+														p: ({ node, ...props }) => <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-3" {...props} />,
+														ul: ({ node, ...props }) => <ul className="list-disc list-inside space-y-1 my-3 ml-2" {...props} />,
+														ol: ({ node, ...props }) => <ol className="list-decimal list-inside space-y-1 my-3 ml-2" {...props} />,
+														li: ({ node, ...props }) => <li className="text-gray-700 dark:text-gray-300 ml-0" {...props} />,
+														code: (props: any) => props.inline ? <code className="bg-purple-100 dark:bg-purple-900 px-2 py-1 rounded text-purple-900 dark:text-purple-100 font-mono text-sm" {...props} /> : <code className="block bg-purple-900/30 text-purple-100 p-4 rounded-lg my-2 overflow-x-auto font-mono text-sm" {...props} />,
+														blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-purple-600 pl-4 italic text-gray-600 dark:text-gray-400 my-3" {...props} />,
+														strong: ({ node, ...props }) => <strong className="font-bold text-purple-700 dark:text-purple-300" {...props} />,
+														em: ({ node, ...props }) => <em className="italic text-purple-600 dark:text-purple-400" {...props} />,
+													}}
+												>
+													{plan.generalInfo}
+												</ReactMarkdown>
+											</div>
+										</div>
 									</CardContent>
 								</Card>
+
+								{/* Save/Download Buttons */}
+								<div className="flex gap-4 mt-8 flex-wrap">
+									<Button
+										type="submit"
+										disabled={saving}
+										onClick={savePlan}
+										className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:scale-[1.02] transition"
+									>
+										{saving ? (
+											<span className="flex items-center gap-2">
+												<Loader2 className="w-4 h-4 animate-spin" />
+												Saving...
+											</span>
+										) : (
+											<span className="flex items-center gap-2">
+												<CheckCircle className="w-4 h-4" />
+												Save Plan
+											</span>
+										)}
+									</Button>
+									<Button
+										onClick={downloadStudyPlan}
+										variant="outline"
+										className="flex-1"
+									>
+										<span className="flex items-center gap-2">
+											<Calendar className="w-4 h-4" />
+											Download PDF
+										</span>
+									</Button>
+								</div>
+
+								{/* Completion Checkbox */}
+								<div className="flex items-center gap-3 mt-6 p-4 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-500/30">
+									<input 
+										type="checkbox" 
+										id="completed" 
+										checked={isCompleted}
+										onChange={handleCompletionToggle}
+										className="w-5 h-5 rounded cursor-pointer"
+									/>
+									<label htmlFor="completed" className="flex-1 cursor-pointer font-medium text-gray-700 dark:text-gray-300">
+										Mark study plan as completed
+									</label>
+									{isCompleted && <CheckCircle className="w-5 h-5 text-green-600" />}
+								</div>
 							</motion.div>
 						)}
 
@@ -415,8 +659,9 @@ export default function StudyPlannerPage() {
 						)}
 					</motion.div>
 				</div>
+			</motion.main>
 
-				{/* Features */}
+			{/* Features Section */}
 				<motion.div
 					className="mt-20"
 					variants={containerVariants}
@@ -448,7 +693,6 @@ export default function StudyPlannerPage() {
 						))}
 					</div>
 				</motion.div>
-			</motion.main>
-		</div>
-	);
-}
+			</div>
+		);
+	}

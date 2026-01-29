@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { AppFooter } from "@/components/app-footer";
+import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
 const geist = Geist({
@@ -55,13 +56,18 @@ export default function RootLayout({
           to-background
           selection:bg-primary/20
           selection:text-foreground
+          dark:from-slate-950
+          dark:via-slate-900
+          dark:to-slate-950
         "
       >
-        {/* Main app content */}
-        <main className="flex-1">{children}</main>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          {/* Main app content */}
+          <main className="flex-1">{children}</main>
 
-        {/* Global footer (persistent across all routes) */}
-        <AppFooter />
+          {/* Global footer (persistent across all routes) */}
+          <AppFooter />
+        </ThemeProvider>
 
         {/* Analytics */}
         <Analytics />
