@@ -94,9 +94,67 @@ export default function SettingsPage() {
     // Load settings from localStorage
     const savedSettings = localStorage.getItem("appSettings");
     if (savedSettings) {
-      setSettings(JSON.parse(savedSettings));
+      const parsed = JSON.parse(savedSettings);
+      setSettings(parsed);
+      // Apply settings immediately
+      applyFontSize(parsed.fontSize);
+      applyCompactView(parsed.compactView);
+      applyAnimations(parsed.animationsEnabled);
     }
   }, []);
+
+  // Apply font size setting to document root
+  const applyFontSize = (size: string) => {
+    const sizeMap: { [key: string]: string } = {
+      small: "14px",
+      medium: "16px",
+      large: "18px",
+      xlarge: "20px",
+    };
+    const fontSize = sizeMap[size] || "16px";
+    document.documentElement.style.fontSize = fontSize;
+    // Also set as CSS variable for easier access
+    document.documentElement.style.setProperty("--font-size-base", fontSize);
+  };
+
+  // Apply compact view by setting data attribute
+  const applyCompactView = (isCompact: boolean) => {
+    if (isCompact) {
+      document.documentElement.setAttribute("data-compact", "true");
+    } else {
+      document.documentElement.removeAttribute("data-compact");
+    }
+  };
+
+  // Apply animations setting by setting data attribute
+  const applyAnimations = (enabled: boolean) => {
+    if (!enabled) {
+      document.documentElement.setAttribute("data-animations-disabled", "true");
+    } else {
+      document.documentElement.removeAttribute("data-animations-disabled");
+    }
+  };
+
+  // Watch for changes to fontSize and apply them
+  useEffect(() => {
+    if (mounted && settings.fontSize) {
+      applyFontSize(settings.fontSize);
+    }
+  }, [settings.fontSize, mounted]);
+
+  // Watch for changes to compactView and apply them
+  useEffect(() => {
+    if (mounted) {
+      applyCompactView(settings.compactView);
+    }
+  }, [settings.compactView, mounted]);
+
+  // Watch for changes to animationsEnabled and apply them
+  useEffect(() => {
+    if (mounted) {
+      applyAnimations(settings.animationsEnabled);
+    }
+  }, [settings.animationsEnabled, mounted]);
 
   const handleSettingChange = (key: string, value: any) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
@@ -106,6 +164,10 @@ export default function SettingsPage() {
     setSaveLoading(true);
     try {
       localStorage.setItem("appSettings", JSON.stringify(settings));
+      // Apply all settings immediately
+      applyFontSize(settings.fontSize);
+      applyCompactView(settings.compactView);
+      applyAnimations(settings.animationsEnabled);
       toast({
         title: "Success",
         description: "Settings saved successfully!",

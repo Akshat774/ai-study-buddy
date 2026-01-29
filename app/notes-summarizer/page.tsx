@@ -16,7 +16,15 @@ import {
 } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { usePDFWorker } from "@/hooks/use-pdf-worker";
-import { BookOpen, Download, Youtube, Play, Upload, X, File } from "lucide-react";
+import {
+  BookOpen,
+  Download,
+  Youtube,
+  Play,
+  Upload,
+  X,
+  File,
+} from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { processUploadedFile } from "@/lib/file-utils";
 
@@ -71,12 +79,12 @@ export default function NotesSummarizerPage() {
     // Load uploaded files from localStorage
     const loadUploadedFiles = () => {
       try {
-        const stored = localStorage.getItem('notes_summarizer_files');
+        const stored = localStorage.getItem("notes_summarizer_files");
         if (stored) {
           setUploadedFiles(JSON.parse(stored));
         }
       } catch (err) {
-        console.error('Failed to load uploaded files:', err);
+        console.error("Failed to load uploaded files:", err);
       }
     };
 
@@ -97,7 +105,7 @@ export default function NotesSummarizerPage() {
     if (!files) return;
 
     const maxSize = 50 * 1024 * 1024; // 50MB
-    const allowedTypes = ['application/pdf', 'image/png', 'text/plain'];
+    const allowedTypes = ["application/pdf", "image/png", "text/plain"];
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
@@ -105,9 +113,9 @@ export default function NotesSummarizerPage() {
       // Validate file size
       if (file.size > maxSize) {
         toast({
-          title: 'Error',
+          title: "Error",
           description: `${file.name} exceeds 50MB limit`,
-          variant: 'destructive',
+          variant: "destructive",
         });
         continue;
       }
@@ -115,9 +123,9 @@ export default function NotesSummarizerPage() {
       // Validate file type
       if (!allowedTypes.includes(file.type)) {
         toast({
-          title: 'Error',
+          title: "Error",
           description: `${file.name} is not a supported format (PDF, PNG, or TXT)`,
-          variant: 'destructive',
+          variant: "destructive",
         });
         continue;
       }
@@ -127,7 +135,10 @@ export default function NotesSummarizerPage() {
         reader.onload = async (event) => {
           try {
             const rawContent = event.target?.result;
-            const processedContent = await processUploadedFile(file, rawContent as any);
+            const processedContent = await processUploadedFile(
+              file,
+              rawContent as any,
+            );
 
             const newFile: UploadedFile = {
               id: `file_${Date.now()}_${i}`,
@@ -141,47 +152,50 @@ export default function NotesSummarizerPage() {
             setUploadedFiles((prev) => {
               const updated = [...prev, newFile];
               // Save to localStorage
-              localStorage.setItem('notes_summarizer_files', JSON.stringify(updated));
+              localStorage.setItem(
+                "notes_summarizer_files",
+                JSON.stringify(updated),
+              );
               return updated;
             });
 
             toast({
-              title: 'Success',
+              title: "Success",
               description: `${file.name} uploaded and processed successfully`,
             });
           } catch (err) {
             toast({
-              title: 'Error',
-              description: `Failed to process ${file.name}: ${err instanceof Error ? err.message : 'Unknown error'}`,
-              variant: 'destructive',
+              title: "Error",
+              description: `Failed to process ${file.name}: ${err instanceof Error ? err.message : "Unknown error"}`,
+              variant: "destructive",
             });
           }
         };
 
-        if (file.type === 'application/pdf') {
+        if (file.type === "application/pdf") {
           reader.readAsArrayBuffer(file);
         } else {
           reader.readAsText(file);
         }
       } catch (err) {
         toast({
-          title: 'Error',
+          title: "Error",
           description: `Failed to read ${file.name}`,
-          variant: 'destructive',
+          variant: "destructive",
         });
       }
     }
 
     // Reset file input
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
   };
 
   const removeFile = (fileId: string) => {
     setUploadedFiles((prev) => {
       const updated = prev.filter((f) => f.id !== fileId);
-      localStorage.setItem('notes_summarizer_files', JSON.stringify(updated));
+      localStorage.setItem("notes_summarizer_files", JSON.stringify(updated));
       return updated;
     });
   };
@@ -207,12 +221,14 @@ export default function NotesSummarizerPage() {
     try {
       // Prepare content - prioritize uploaded files, then add manual notes
       let contentToSummarize = formData.notes;
-      
+
       if (uploadedFiles.length > 0) {
         const fileContent = uploadedFiles
-          .map(f => `### ${f.name}\n${f.content}`)
-          .join('\n\n---\n\n');
-        contentToSummarize = fileContent + (formData.notes ? `\n\n### Additional Notes\n${formData.notes}` : '');
+          .map((f) => `### ${f.name}\n${f.content}`)
+          .join("\n\n---\n\n");
+        contentToSummarize =
+          fileContent +
+          (formData.notes ? `\n\n### Additional Notes\n${formData.notes}` : "");
       }
 
       const response = await fetch("/api/summarize-notes", {
@@ -651,61 +667,124 @@ export default function NotesSummarizerPage() {
                     </CardHeader>
 
                     <CardContent className="pt-6">
-                      <div className="bg-gradient-to-br from-emerald-50 to-blue-50 rounded-lg p-6 border border-emerald-200/40">
+                      <div className="bg-linear-to-br from-emerald-50 to-blue-50 rounded-lg p-6 border border-emerald-200/40">
                         <div className="text-gray-800 markdown-content">
                           <ReactMarkdown
                             components={{
-                              h1: ({node, ...props}) => <h1 className="text-2xl font-bold text-emerald-700 mt-6 mb-3" {...props} />,
-                              h2: ({node, ...props}) => <h2 className="text-xl font-bold text-emerald-700 mt-5 mb-2" {...props} />,
-                              h3: ({node, ...props}) => <h3 className="text-lg font-bold text-emerald-600 mt-4 mb-2" {...props} />,
-                              h4: ({node, ...props}) => <h4 className="text-base font-bold text-emerald-600 mt-3 mb-1" {...props} />,
-                              p: ({node, ...props}) => <p className="text-gray-700 mb-3 leading-relaxed" {...props} />,
-                              strong: ({node, ...props}) => <strong className="font-bold text-gray-900" {...props} />,
-                              em: ({node, ...props}) => <em className="italic text-gray-700" {...props} />,
-                              ul: ({node, ...props}) => <ul className="list-disc list-inside mb-3 ml-2 space-y-1" {...props} />,
-                              ol: ({node, ...props}) => <ol className="list-decimal list-inside mb-3 ml-2 space-y-1" {...props} />,
-                              li: ({node, ...props}) => <li className="text-gray-700" {...props} />,
-                              blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-emerald-500 pl-4 py-2 my-3 bg-emerald-50/50 italic text-gray-700" {...props} />,
-                              table: ({node, ...props}) => <table className="w-full border-collapse my-4 border border-emerald-300" {...props} />,
-                              thead: ({node, ...props}) => <thead className="bg-emerald-100" {...props} />,
-                              tbody: ({node, ...props}) => <tbody {...props} />,
-                              tr: ({node, ...props}) => <tr className="border border-emerald-300" {...props} />,
-                              th: ({node, ...props}) => <th className="border border-emerald-300 px-3 py-2 text-left font-bold text-gray-900" {...props} />,
-                              td: ({node, ...props}) => <td className="border border-emerald-300 px-3 py-2 text-gray-700" {...props} />,
-                              code: ({node, inline, ...props}: any) => 
-                                inline ? 
-                                <code className="bg-emerald-100 text-emerald-900 px-2 py-1 rounded font-mono text-sm" {...props} /> :
-                                <code className="bg-gray-900 text-emerald-300 px-4 py-3 rounded font-mono text-sm block overflow-x-auto my-3" {...props} />,
-                              pre: ({node, ...props}) => <pre className="bg-gray-900 text-emerald-300 px-4 py-3 rounded font-mono text-sm overflow-x-auto my-3" {...props} />,
-                              hr: () => <hr className="my-4 border-emerald-300" />,
-                      <div className="bg-linear-to-br from-emerald-50 to-blue-50 rounded-lg p-6 border border-emerald-200/40 prose prose-sm max-w-none">
-                        <div className="text-gray-800">
-                          <div
-                            dangerouslySetInnerHTML={{
-                              __html: summary.summary
-                                .split("\n")
-                                .map((line) => {
-                                  if (line.startsWith("##")) {
-                                    return `<h3 style="color: #059669; margin-top: 1.5em; margin-bottom: 0.5em; font-weight: bold;">${line.replace(/^#{1,3}\s/, "")}</h3>`;
-                                  }
-                                  if (line.startsWith("#")) {
-                                    return `<h2 style="color: #059669; margin-top: 1em; margin-bottom: 0.5em; font-weight: bold; font-size: 1.25em;">${line.replace(/^#{1,3}\s/, "")}</h2>`;
-                                  }
-                                  if (
-                                    line.startsWith("-") ||
-                                    line.startsWith("*")
-                                  ) {
-                                    return `<li style="margin-left: 1.5em; margin-bottom: 0.5em;">${line.replace(/^[-*]\s/, "")}</li>`;
-                                  }
-                                  if (line.startsWith("**")) {
-                                    return `<p style="font-weight: bold; color: #334155; margin: 0.5em 0;">${line.replace(/\*\*/g, "")}</p>`;
-                                  }
-                                  if (line.trim()) {
-                                    return `<p style="margin: 0.5em 0; color: #334155; line-height: 1.6;">${line}</p>`;
-                                  }
-                                  return "";
-                                })
-                                .join(""),
+                              h1: ({ node, ...props }) => (
+                                <h1
+                                  className="text-2xl font-bold text-emerald-700 mt-6 mb-3"
+                                  {...props}
+                                />
+                              ),
+                              h2: ({ node, ...props }) => (
+                                <h2
+                                  className="text-xl font-bold text-emerald-700 mt-5 mb-2"
+                                  {...props}
+                                />
+                              ),
+                              h3: ({ node, ...props }) => (
+                                <h3
+                                  className="text-lg font-bold text-emerald-600 mt-4 mb-2"
+                                  {...props}
+                                />
+                              ),
+                              h4: ({ node, ...props }) => (
+                                <h4
+                                  className="text-base font-bold text-emerald-600 mt-3 mb-1"
+                                  {...props}
+                                />
+                              ),
+                              p: ({ node, ...props }) => (
+                                <p
+                                  className="text-gray-700 mb-3 leading-relaxed"
+                                  {...props}
+                                />
+                              ),
+                              strong: ({ node, ...props }) => (
+                                <strong
+                                  className="font-bold text-gray-900"
+                                  {...props}
+                                />
+                              ),
+                              em: ({ node, ...props }) => (
+                                <em
+                                  className="italic text-gray-700"
+                                  {...props}
+                                />
+                              ),
+                              ul: ({ node, ...props }) => (
+                                <ul
+                                  className="list-disc list-inside mb-3 ml-2 space-y-1"
+                                  {...props}
+                                />
+                              ),
+                              ol: ({ node, ...props }) => (
+                                <ol
+                                  className="list-decimal list-inside mb-3 ml-2 space-y-1"
+                                  {...props}
+                                />
+                              ),
+                              li: ({ node, ...props }) => (
+                                <li className="text-gray-700" {...props} />
+                              ),
+                              blockquote: ({ node, ...props }) => (
+                                <blockquote
+                                  className="border-l-4 border-emerald-500 pl-4 py-2 my-3 bg-emerald-50/50 italic text-gray-700"
+                                  {...props}
+                                />
+                              ),
+                              table: ({ node, ...props }) => (
+                                <table
+                                  className="w-full border-collapse my-4 border border-emerald-300"
+                                  {...props}
+                                />
+                              ),
+                              thead: ({ node, ...props }) => (
+                                <thead className="bg-emerald-100" {...props} />
+                              ),
+                              tbody: ({ node, ...props }) => (
+                                <tbody {...props} />
+                              ),
+                              tr: ({ node, ...props }) => (
+                                <tr
+                                  className="border border-emerald-300"
+                                  {...props}
+                                />
+                              ),
+                              th: ({ node, ...props }) => (
+                                <th
+                                  className="border border-emerald-300 px-3 py-2 text-left font-bold text-gray-900"
+                                  {...props}
+                                />
+                              ),
+                              td: ({ node, ...props }) => (
+                                <td
+                                  className="border border-emerald-300 px-3 py-2 text-gray-700"
+                                  {...props}
+                                />
+                              ),
+                              code: ({ node, inline, ...props }: any) =>
+                                inline ? (
+                                  <code
+                                    className="bg-emerald-100 text-emerald-900 px-2 py-1 rounded font-mono text-sm"
+                                    {...props}
+                                  />
+                                ) : (
+                                  <code
+                                    className="bg-gray-900 text-emerald-300 px-4 py-3 rounded font-mono text-sm block overflow-x-auto my-3"
+                                    {...props}
+                                  />
+                                ),
+                              pre: ({ node, ...props }) => (
+                                <pre
+                                  className="bg-gray-900 text-emerald-300 px-4 py-3 rounded font-mono text-sm overflow-x-auto my-3"
+                                  {...props}
+                                />
+                              ),
+                              hr: () => (
+                                <hr className="my-4 border-emerald-300" />
+                              ),
                             }}
                           >
                             {summary.summary}
