@@ -30,6 +30,10 @@ export default function ContactPage() {
 				duration: 0.6,
 				ease: 'power2.out',
 				delay: 0.1,
+				onComplete: function() {
+					// Ensure elements stay visible
+					gsap.set('[data-animate]', { clearProps: 'all' });
+				}
 			});
 		});
 		return () => ctx.revert();

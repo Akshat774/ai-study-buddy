@@ -31,6 +31,7 @@ export default function QuizTakePage() {
 	const searchParams = useSearchParams();
 	const quizId = searchParams.get('id');
 	const day = searchParams.get('day');
+	const topic = searchParams.get('topic') || 'oscillation';
 
 	const [quiz, setQuiz] = useState<Quiz | null>(null);
 	const [answers, setAnswers] = useState<(number | null)[]>([]);
@@ -47,11 +48,53 @@ export default function QuizTakePage() {
 			// Load existing quiz
 			loadQuiz();
 		}
-	}, [quizId, day]);
+	}, [quizId, day, topic]);
 
 	const initializeQuiz = async () => {
 		try {
-			// Mock quiz questions
+			const response = await fetch('/api/generate-quiz', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					topic: topic,
+					subject: 'physics',
+					difficulty: 'medium'
+				}),
+			});
+
+			const data = await response.json();
+
+			if (data.success && data.questions && data.questions.length > 0) {
+				const formattedQuestions: Question[] = data.questions.map((q: any, index: number) => {
+					// Find the correct answer index in the shuffled options
+					const correctAnswerIndex = q.options.indexOf(q.correctAnswerText);
+					return {
+						id: String(index + 1),
+						text: q.text,
+						options: q.options,
+						correctAnswer: correctAnswerIndex !== -1 ? correctAnswerIndex : q.correctAnswer || 0,
+						userAnswer: null,
+					};
+				});
+
+				const newQuiz: Quiz = {
+					id: Date.now().toString(),
+					day: parseInt(day || '1'),
+					subject: `${data.topic} - Quiz`,
+					questions: formattedQuestions,
+					score: null,
+					completed: false,
+					startedAt: new Date(),
+				};
+
+				setQuiz(newQuiz);
+				setAnswers(new Array(formattedQuestions.length).fill(null));
+			} else {
+				throw new Error('Failed to fetch quiz questions');
+			}
+		} catch (error) {
+			console.error('Error initializing quiz:', error);
+			// Fallback to mock questions if API fails
 			const mockQuestions: Question[] = [
 				{
 					id: '1',
@@ -102,8 +145,6 @@ export default function QuizTakePage() {
 
 			setQuiz(newQuiz);
 			setAnswers(new Array(mockQuestions.length).fill(null));
-		} catch (error) {
-			console.error('Error initializing quiz:', error);
 		} finally {
 			setLoading(false);
 		}
@@ -141,22 +182,36 @@ export default function QuizTakePage() {
 	};
 
 	const handleSubmit = async () => {
+		if (!quiz) return;
+
 		try {
-			const response = await fetch('/api/quiz', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					action: 'submit',
-					quizId: quiz?.id,
-					userId: 'current-user',
-					answers,
-				}),
+			// Calculate score locally
+			let correctCount = 0;
+			quiz.questions.forEach((question, index) => {
+				if (answers[index] === question.correctAnswer) {
+					correctCount++;
+				}
 			});
 
-			const data = await response.json();
-			if (data.success) {
-				setScore(data.score);
-				setSubmitted(true);
+			const calculatedScore = Math.round((correctCount / quiz.questions.length) * 100);
+			setScore(calculatedScore);
+			setSubmitted(true);
+
+			// Try to save to backend if API exists
+			try {
+				await fetch('/api/quiz', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						action: 'submit',
+						quizId: quiz?.id,
+						userId: 'current-user',
+						answers,
+						score: calculatedScore,
+					}),
+				});
+			} catch (apiError) {
+				console.log('Could not save to backend, score calculated locally');
 			}
 		} catch (error) {
 			console.error('Error submitting quiz:', error);

@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useRef } from "react";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -16,15 +16,58 @@ import {
 } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { signIn } from "@/lib/auth";
+import { AuthNav } from "@/components/auth-nav";
+import { motion } from "framer-motion";
+import gsap from "gsap";
 
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
+
+  // Advanced background animations
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      // Floating blobs animation
+      gsap.to(".blob-1", {
+        x: 30,
+        y: 50,
+        duration: 6,
+        repeat: -1,
+        yoyo: true,
+        ease: "sine.inOut",
+      });
+      gsap.to(".blob-2", {
+        x: -40,
+        y: -60,
+        duration: 8,
+        repeat: -1,
+        yoyo: true,
+        ease: "sine.inOut",
+      });
+      gsap.to(".blob-3", {
+        x: 50,
+        y: -30,
+        duration: 7,
+        repeat: -1,
+        yoyo: true,
+        ease: "sine.inOut",
+      });
+      // Rotating gradient
+      gsap.to(".gradient-orb", {
+        rotation: 360,
+        duration: 20,
+        repeat: -1,
+        ease: "none",
+      });
+    }, containerRef);
+    return () => ctx.revert();
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -52,7 +95,14 @@ export default function LoginPage() {
           title: "Success",
           description: "Logged in successfully",
         });
-        router.push("/dashboard");
+        // Animate to dashboard
+        gsap.to(".login-card", {
+          opacity: 0,
+          y: -50,
+          duration: 0.5,
+          ease: "power2.in",
+          onComplete: () => router.push("/dashboard"),
+        });
       }
     } catch (error) {
       toast({
@@ -66,62 +116,91 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-2 text-center">
-          <CardTitle className="text-3xl font-bold">AI Study Buddy</CardTitle>
-          <CardDescription>Sign in to your account</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium">
-                Email Address
-              </label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="your@email.com"
-                required
-                value={formData.email}
-                onChange={handleInputChange}
-              />
+    <>
+      <AuthNav />
+      <div ref={containerRef} className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 px-4 py-12 overflow-hidden relative">
+      {/* Animated background blobs */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="blob-1 absolute top-20 left-10 w-72 h-72 bg-purple-600/30 rounded-full blur-3xl" />
+        <div className="blob-2 absolute bottom-20 right-10 w-80 h-80 bg-blue-600/20 rounded-full blur-3xl" />
+        <div className="blob-3 absolute top-1/2 left-1/3 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl" />
+        <div className="gradient-orb absolute inset-0 opacity-20 bg-gradient-conic from-purple-600 via-blue-600 to-purple-600" />
+      </div>
+
+      {/* Content */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.3 }}
+        className="login-card relative z-10"
+      >
+        <Card className="w-full max-w-md shadow-2xl border-white/20 bg-slate-800/50 backdrop-blur-xl">
+          <CardHeader className="space-y-2 text-center">
+            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+              AI Study Buddy
+            </CardTitle>
+            <CardDescription className="text-slate-400">
+              Sign in to your account
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <label htmlFor="email" className="text-sm font-medium text-slate-200">
+                  Email Address
+                </label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="your@email.com"
+                  required
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-500"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="password" className="text-sm font-medium text-slate-200">
+                  Password
+                </label>
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  placeholder="Enter your password"
+                  required
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-500"
+                />
+              </div>
+
+              <Button 
+                type="submit" 
+                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700" 
+                disabled={loading}
+              >
+                {loading ? "Signing in..." : "Sign In"}
+              </Button>
+            </form>
+
+            <div className="mt-6 text-center text-sm">
+              <span className="text-slate-400">
+                Don't have an account?{" "}
+              </span>
+              <Link
+                href="/signup"
+                className="font-medium text-purple-400 hover:text-purple-300 transition"
+              >
+                Sign up
+              </Link>
             </div>
-
-            <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium">
-                Password
-              </label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                placeholder="Enter your password"
-                required
-                value={formData.password}
-                onChange={handleInputChange}
-              />
-            </div>
-
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Signing in..." : "Sign In"}
-            </Button>
-          </form>
-
-          <div className="mt-6 text-center text-sm">
-            <span className="text-muted-foreground">
-              Don't have an account?{" "}
-            </span>
-            <Link
-              href="/signup"
-              className="font-medium text-primary hover:underline"
-            >
-              Sign up
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </motion.div>
     </div>
+    </>
   );
 }

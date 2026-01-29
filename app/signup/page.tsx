@@ -14,15 +14,16 @@ import {
 } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { signUp } from '@/lib/auth';
+import { AuthNav } from '@/components/auth-nav';
 
 import { gsap } from 'gsap';
-import { useTypewriter, Cursor } from 'react-simple-typewriter';
-import { MouseParallax } from 'react-just-parallax';
+import { motion } from 'framer-motion';
 
 export default function SignupPage() {
 	const router = useRouter();
 	const { toast } = useToast();
 	const cardRef = useRef<HTMLDivElement>(null);
+	const containerRef = useRef<HTMLDivElement>(null);
 
 	const [loading, setLoading] = useState(false);
 	const [formData, setFormData] = useState({
@@ -32,11 +33,44 @@ export default function SignupPage() {
 		confirmPassword: '',
 	});
 
-	const [text] = useTypewriter({
-		words: ['Learn smarter.', 'Plan better.', 'Succeed faster.'],
-		loop: false,
-		delaySpeed: 1500,
-	});
+	// Advanced background animations
+	useEffect(() => {
+		const ctx = gsap.context(() => {
+			// Floating blobs animation
+			gsap.to(".blob-1", {
+				x: 30,
+				y: 50,
+				duration: 6,
+				repeat: -1,
+				yoyo: true,
+				ease: "sine.inOut",
+			});
+			gsap.to(".blob-2", {
+				x: -40,
+				y: -60,
+				duration: 8,
+				repeat: -1,
+				yoyo: true,
+				ease: "sine.inOut",
+			});
+			gsap.to(".blob-3", {
+				x: 50,
+				y: -30,
+				duration: 7,
+				repeat: -1,
+				yoyo: true,
+				ease: "sine.inOut",
+			});
+			// Rotating gradient
+			gsap.to(".gradient-orb", {
+				rotation: 360,
+				duration: 20,
+				repeat: -1,
+				ease: "none",
+			});
+		}, containerRef);
+		return () => ctx.revert();
+	}, []);
 
 	useEffect(() => {
 		gsap.fromTo(
@@ -95,9 +129,16 @@ export default function SignupPage() {
 			} else {
 				toast({
 					title: 'Success',
-					description: 'Account created successfully! Please log in.',
+					description: 'Account created successfully!',
 				});
-				router.push('/login');
+				// Animate to dashboard
+				gsap.to(".signup-card", {
+					opacity: 0,
+					y: -50,
+					duration: 0.5,
+					ease: "power2.in",
+					onComplete: () => router.push("/dashboard"),
+				});
 			}
 		} catch {
 			toast({
@@ -111,102 +152,110 @@ export default function SignupPage() {
 	};
 
 	return (
-		<div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-background via-muted/30 to-background px-4">
-			{/* Decorative parallax blobs */}
-			<MouseParallax strength={0.04} enableOnTouchDevice={false}>
-				<div className="absolute -top-32 -left-32 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
-				<div className="absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-secondary/10 blur-3xl" />
-			</MouseParallax>
+		<>
+			<AuthNav />
+			<div ref={containerRef} className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 px-4 pt-20">
+				{/* Animated background blobs */}
+				<div className="absolute inset-0 overflow-hidden">
+					<div className="blob-1 absolute top-20 left-10 w-72 h-72 bg-purple-600/30 rounded-full blur-3xl" />
+					<div className="blob-2 absolute bottom-20 right-10 w-80 h-80 bg-blue-600/20 rounded-full blur-3xl" />
+					<div className="blob-3 absolute top-1/2 left-1/3 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl" />
+					<div className="gradient-orb absolute inset-0 opacity-20 bg-gradient-conic from-purple-600 via-blue-600 to-purple-600" />
+				</div>
 
-			<Card
-				ref={cardRef}
-				className="relative w-full max-w-md border border-border/60 bg-background/80 backdrop-blur-xl shadow-xl"
-			>
-				<CardHeader className="space-y-3 text-center">
-					<CardTitle className="text-3xl font-bold tracking-tight">
-						Create your account
-					</CardTitle>
+				{/* Content */}
+				<motion.div
+					initial={{ opacity: 0, y: 20 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ duration: 0.6, delay: 0.3 }}
+					className="signup-card relative z-10"
+				>
+					<Card
+						ref={cardRef}
+						className="w-full max-w-md shadow-2xl border-white/20 bg-slate-800/50 backdrop-blur-xl"
+					>
+						<CardHeader className="space-y-3 text-center">
+							<CardTitle className="text-3xl font-bold tracking-tight bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+								Create your account
+							</CardTitle>
 
-					<CardDescription className="text-sm">
-						<span className="text-primary font-medium">{text}</span>
-						<Cursor cursorStyle="|" />
-					</CardDescription>
+							<CardDescription className="text-slate-400">
+								Join AI Study Buddy and start your learning journey
+							</CardDescription>
+						</CardHeader>
 
-					<p className="text-xs text-muted-foreground">
-						Join <span className="font-medium">AI Study Buddy for Bharat</span>
-					</p>
-				</CardHeader>
+						<CardContent>
+							<form onSubmit={handleSubmit} className="space-y-4">
+								{[
+									{
+										id: 'fullName',
+										label: 'Full Name',
+										type: 'text',
+										placeholder: 'Your name',
+									},
+									{
+										id: 'email',
+										label: 'Email Address',
+										type: 'email',
+										placeholder: 'you@email.com',
+									},
+									{
+										id: 'password',
+										label: 'Password',
+										type: 'password',
+										placeholder: 'At least 6 characters',
+									},
+									{
+										id: 'confirmPassword',
+										label: 'Confirm Password',
+										type: 'password',
+										placeholder: 'Confirm password',
+									},
+								].map((field) => (
+									<div key={field.id} className="space-y-1.5">
+										<label
+											htmlFor={field.id}
+											className="text-sm font-medium text-slate-200"
+										>
+											{field.label}
+										</label>
+										<Input
+											id={field.id}
+											name={field.id}
+											type={field.type}
+											placeholder={field.placeholder}
+											value={(formData as any)[field.id]}
+											onChange={handleInputChange}
+											className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-500"
+											required
+										/>
+									</div>
+								))}
 
-				<CardContent>
-					<form onSubmit={handleSubmit} className="space-y-4">
-						{[
-							{
-								id: 'fullName',
-								label: 'Full Name',
-								type: 'text',
-								placeholder: 'Your name',
-							},
-							{
-								id: 'email',
-								label: 'Email Address',
-								type: 'email',
-								placeholder: 'you@email.com',
-							},
-							{
-								id: 'password',
-								label: 'Password',
-								type: 'password',
-								placeholder: 'At least 6 characters',
-							},
-							{
-								id: 'confirmPassword',
-								label: 'Confirm Password',
-								type: 'password',
-								placeholder: 'Confirm password',
-							},
-						].map((field) => (
-							<div key={field.id} className="space-y-1.5">
-								<label
-									htmlFor={field.id}
-									className="text-sm font-medium text-muted-foreground"
+								<Button
+									type="submit"
+									className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 transition-all duration-300 hover:scale-[1.02]"
+									disabled={loading}
 								>
-									{field.label}
-								</label>
-								<Input
-									id={field.id}
-									name={field.id}
-									type={field.type}
-									placeholder={field.placeholder}
-									value={(formData as any)[field.id]}
-									onChange={handleInputChange}
-									className="transition focus-visible:ring-primary"
-									required
-								/>
+									{loading ? 'Creating account…' : 'Create Account'}
+								</Button>
+							</form>
+
+							<div className="mt-6 text-center text-sm">
+								<span className="text-slate-400">
+									Already have an account?
+								</span>{' '}
+								<Link
+									href="/login"
+									className="font-medium text-purple-400 hover:text-purple-300 transition"
+								>
+									Sign in
+								</Link>
 							</div>
-						))}
-
-						<Button
-							type="submit"
-							className="w-full transition-all duration-300 hover:scale-[1.02]"
-							disabled={loading}
-						>
-							{loading ? 'Creating account…' : 'Create Account'}
-						</Button>
-					</form>
-
-					<div className="mt-6 text-center text-sm">
-						<span className="text-muted-foreground">
-							Already have an account?
-						</span>{' '}
-						<Link
-							href="/login"
-							className="font-medium text-primary hover:underline"
-						>
-							Sign in
-						</Link>
-					</div>
-				</CardContent>
-			</Card>
-		</div>
+						</CardContent>
+					</Card>
+				</motion.div>
+			</div>
+		</>
 	);
 }

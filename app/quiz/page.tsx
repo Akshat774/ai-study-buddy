@@ -26,6 +26,15 @@ import {
   Calendar,
   AlertCircle,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface Quiz {
   id: string;
@@ -37,6 +46,15 @@ interface Quiz {
   unlocked: boolean;
 }
 
+const AVAILABLE_TOPICS = [
+  { label: 'Oscillation', value: 'oscillation' },
+  { label: 'Doppler Effect', value: 'doppler effect' },
+  { label: 'Calculus', value: 'calculus' },
+  { label: 'Algebra', value: 'algebra' },
+  { label: 'Atomic Structure', value: 'atomic structure' },
+  { label: 'Genetics', value: 'genetics' },
+];
+
 export default function QuizPage() {
   const router = useRouter();
   const { toast } = useToast();
@@ -45,6 +63,8 @@ export default function QuizPage() {
   const [loading, setLoading] = useState(true);
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [selectedQuiz, setSelectedQuiz] = useState<Quiz | null>(null);
+  const [showTopicModal, setShowTopicModal] = useState(false);
+  const [selectedTopic, setSelectedTopic] = useState('oscillation');
   const [totalStreak, setTotalStreak] = useState(7);
   const [totalAccuracy, setTotalAccuracy] = useState(81);
 
@@ -259,9 +279,14 @@ export default function QuizPage() {
                           disabled={!quiz.unlocked}
                           onClick={() => {
                             if (quiz.unlocked) {
-                              router.push(
-                                `/quiz/take?id=${quiz.id}&day=${quiz.day}`
-                              );
+                              if (!quiz.completed) {
+                                setSelectedQuiz(quiz);
+                                setShowTopicModal(true);
+                              } else {
+                                router.push(
+                                  `/quiz/take?id=${quiz.id}&day=${quiz.day}`
+                                );
+                              }
                             }
                           }}
                           className={`${
@@ -375,6 +400,57 @@ export default function QuizPage() {
             </Card>
           </div>
         </div>
+
+        {/* Topic Selection Modal */}
+        <Dialog open={showTopicModal} onOpenChange={setShowTopicModal}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Select Quiz Topic</DialogTitle>
+              <DialogDescription>
+                Choose a topic to start your quiz. You'll get 5 questions on this topic.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="grid grid-cols-2 gap-3 py-4">
+              {AVAILABLE_TOPICS.map((topic) => (
+                <button
+                  key={topic.value}
+                  onClick={() => setSelectedTopic(topic.value)}
+                  className={`p-3 rounded-lg border-2 transition-all text-sm font-medium ${
+                    selectedTopic === topic.value
+                      ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
+                      : 'border-slate-200 dark:border-slate-700 hover:border-indigo-400 dark:hover:border-indigo-400'
+                  }`}
+                >
+                  {topic.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex gap-3 mt-4">
+              <Button
+                variant="outline"
+                onClick={() => setShowTopicModal(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  if (selectedQuiz) {
+                    router.push(
+                      `/quiz/take?id=${selectedQuiz.id}&day=${selectedQuiz.day}&topic=${selectedTopic}`
+                    );
+                  }
+                  setShowTopicModal(false);
+                }}
+                className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600"
+              >
+                Start Quiz
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );

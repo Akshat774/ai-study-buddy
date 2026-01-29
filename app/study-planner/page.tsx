@@ -16,6 +16,13 @@ import {
 	CardHeader,
 	CardTitle,
 } from '@/components/ui/card';
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+} from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import ReactMarkdown from 'react-markdown';
 import {
@@ -86,6 +93,8 @@ export default function StudyPlannerPage() {
 	const [pdfFile, setPdfFile] = useState<File | null>(null);
 	const [pdfName, setPdfName] = useState('');
 	const [uploadingPdf, setUploadingPdf] = useState(false);
+	const [selectedDay, setSelectedDay] = useState<DayRoutine | null>(null);
+	const [showDetailModal, setShowDetailModal] = useState(false);
 
 	/* ---------- GSAP page entrance ---------- */
 	useEffect(() => {
@@ -541,15 +550,24 @@ export default function StudyPlannerPage() {
 												</CardHeader>
 												<CardContent className="pt-6">
 													<div className="space-y-3 mb-4">
-														<p className="text-sm text-muted-foreground line-clamp-3">
-															{day.content.substring(0, 150)}...
+														<p className="text-sm text-muted-foreground line-clamp-4">
+															{day.content
+																.split('\n')
+																.slice(0, 3)
+																.map((line: string) => line.trim())
+																.filter((line: string) => line.length > 0)
+																.join(' • ')}
 														</p>
 													</div>
 													<Button
 														variant="outline"
 														className="w-full group-hover:bg-purple-50 dark:group-hover:bg-purple-900/30 transition"
+														onClick={() => {
+															setSelectedDay(day);
+															setShowDetailModal(true);
+														}}
 													>
-														View Details
+														View Details →
 													</Button>
 												</CardContent>
 											</Card>
@@ -693,6 +711,55 @@ export default function StudyPlannerPage() {
 						))}
 					</div>
 				</motion.div>
+
+				{/* Detail Modal */}
+				<Dialog open={showDetailModal} onOpenChange={setShowDetailModal}>
+					<DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+						{selectedDay && (
+							<>
+								<DialogHeader>
+									<DialogTitle className="flex items-center gap-3">
+										<div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center text-white font-bold">
+											{selectedDay.dayNumber}
+										</div>
+										<span>{selectedDay.title}</span>
+									</DialogTitle>
+									<DialogDescription>
+										Detailed schedule for this day
+									</DialogDescription>
+								</DialogHeader>
+								<div className="mt-4 space-y-4">
+									<div className="prose dark:prose-invert max-w-none">
+										<ReactMarkdown
+											components={{
+												h1: ({ node, ...props }) => <h1 className="text-2xl font-bold text-purple-800 dark:text-purple-200 mt-4 mb-2 first:mt-0" {...props} />,
+												h2: ({ node, ...props }) => <h2 className="text-xl font-bold text-purple-700 dark:text-purple-300 mt-3 mb-2" {...props} />,
+												h3: ({ node, ...props }) => <h3 className="text-lg font-bold text-purple-600 dark:text-purple-400 mt-2 mb-1" {...props} />,
+												p: ({ node, ...props }) => <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-2" {...props} />,
+												ul: ({ node, ...props }) => <ul className="list-disc list-inside space-y-1 my-2 ml-2" {...props} />,
+												li: ({ node, ...props }) => <li className="text-gray-700 dark:text-gray-300" {...props} />,
+												strong: ({ node, ...props }) => <strong className="font-bold text-purple-700 dark:text-purple-300" {...props} />,
+											}}
+										>
+											{selectedDay.content}
+										</ReactMarkdown>
+									</div>
+									<div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+										<div className="text-sm text-muted-foreground">
+											<p className="font-semibold text-foreground mb-2">Timing Breakdown:</p>
+											<div className="grid grid-cols-2 gap-2 text-xs">
+												<div>⏰ Morning: 6:00 AM - 9:00 AM</div>
+												<div>📚 Afternoon: 1:00 PM - 4:00 PM</div>
+												<div>🌙 Evening: 6:00 PM - 8:00 PM</div>
+												<div>🎯 Night: 8:00 PM - 10:00 PM</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</>
+						)}
+					</DialogContent>
+				</Dialog>
 			</div>
 		);
 	}

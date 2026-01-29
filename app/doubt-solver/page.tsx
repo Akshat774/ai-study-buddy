@@ -272,21 +272,24 @@ export default function DoubtSolverPage() {
 														title: 'Understanding Core Concepts',
 														channel: 'Physics Academy',
 														duration: '12:34',
+														url: 'https://www.youtube.com/results?search_query=understanding+core+concepts'
 													},
 													{
 														title: 'Advanced Problem Solving',
 														channel: 'Math Mastery',
 														duration: '18:45',
+														url: 'https://www.youtube.com/results?search_query=advanced+problem+solving'
 													},
 													{
 														title: 'In-Depth Explanation',
 														channel: 'Science Hub',
 														duration: '25:20',
+														url: 'https://www.youtube.com/results?search_query=in+depth+explanation'
 													},
 												].map((video, idx) => (
 													<a
 														key={idx}
-														href="#"
+														href={video.url}
 														target="_blank"
 														rel="noopener noreferrer"
 														className="p-3 rounded-lg bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border border-purple-200/40 dark:border-purple-500/30 hover:shadow-md transition-all hover:border-purple-400 group"
