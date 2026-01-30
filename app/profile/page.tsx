@@ -49,7 +49,7 @@ export default function ProfilePage() {
 	const router = useRouter();
 	const { toast } = useToast();
 	const fileInputRef = useRef<HTMLInputElement>(null);
-	const [isCompleting, setIsCompleting] = useState(false);
+	const [isEditing, setIsEditing] = useState(false);
 	const [isComplete, setIsComplete] = useState(false);
 	const [loading, setLoading] = useState(false);
 	const [photoPreview, setPhotoPreview] = useState<string | null>(null);
@@ -62,6 +62,37 @@ export default function ProfilePage() {
 		strengths: '',
 		weaknesses: '',
 	});
+
+	const [initialData, setInitialData] = useState({
+		fullName: '',
+		targetExam: 'JEE Advanced',
+		currentClass: '12',
+		strengths: '',
+		weaknesses: '',
+	});
+
+	const handleCancel = () => {
+		setProfileData(initialData);
+		setIsEditing(false);
+	};
+
+	useEffect(() => {
+		const getProfile = async () => {
+			const response = await fetch('/api/profile-info');
+			const result = await response.json();
+
+			const data = result.data;
+
+			setProfileData({
+				fullName: data.name || '',
+				targetExam: data.target || 'JEE Advance',
+				currentClass: data.class || '12',
+				strengths: data.strengths || '',
+				weaknesses: data.weakness || '',
+			});
+		};
+		getProfile();
+	}, []);
 
 	useEffect(() => {
 		const getUrl = async () => {
@@ -87,6 +118,7 @@ export default function ProfilePage() {
 		if (!file) return;
 
 		if (file) {
+			setUploadingPhoto(true);
 			// Validate file size (max 5MB)
 			if (file.size > 6 * 1024 * 1024) {
 				toast({
@@ -124,7 +156,7 @@ export default function ProfilePage() {
 					title: 'Success',
 					description: 'Profile photo uploaded successfully!',
 				});
-				console.log(data);
+				setPhotoPreview(data.url);
 			} catch (error: any) {
 				toast({
 					title: 'Upload Failed',
@@ -132,6 +164,8 @@ export default function ProfilePage() {
 						error.message || 'Could not save your image to the server!',
 					variant: 'destructive',
 				});
+			} finally {
+				setUploadingPhoto(false);
 			}
 		}
 	};
@@ -157,9 +191,26 @@ export default function ProfilePage() {
 
 			const data = await response.json();
 
+			if (!data.success) {
+				toast({
+					title: 'Error',
+					description: data.error,
+					variant: 'destructive',
+				});
+				return;
+			}
+
 			toast({
 				title: 'Success',
 				description: 'Profile completed successfully! 🎉',
+			});
+
+			setProfileData({
+				fullName: data.name || '',
+				targetExam: data.target || 'JEE Advance',
+				currentClass: data.class || '12',
+				strengths: data.strengths || '',
+				weaknesses: data.weakness || '',
 			});
 
 			setTimeout(() => {
@@ -284,6 +335,17 @@ export default function ProfilePage() {
 												<BookOpen className="w-5 h-5 text-purple-600" />
 												Your Information
 											</CardTitle>
+											<div className="flex justify-end mb-4">
+												{!isEditing && (
+													<Button
+														variant="outline"
+														onClick={() => setIsEditing(true)}
+														className="flex items-center gap-2"
+													>
+														Edit Profile
+													</Button>
+												)}
+											</div>
 											<CardDescription>
 												Provide details to create a personalized study plan
 											</CardDescription>
@@ -302,21 +364,8 @@ export default function ProfilePage() {
 														name="fullName"
 														value={profileData.fullName}
 														onChange={handleInputChange}
+														disabled={!isEditing}
 														placeholder="Enter your full name"
-														required
-													/>
-												</div>
-
-												<div className="space-y-2">
-													<label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-														Email Address *
-													</label>
-													<Input
-														type="email"
-														name="email"
-														value={profileData.email}
-														onChange={handleInputChange}
-														placeholder="your.email@example.com"
 														required
 													/>
 												</div>
@@ -329,6 +378,7 @@ export default function ProfilePage() {
 														name="targetExam"
 														value={profileData.targetExam}
 														onChange={handleInputChange}
+														disabled={!isEditing}
 														className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/60 text-slate-900 dark:text-slate-100 px-4 py-2 text-sm shadow-sm dark:shadow-lg transition-all duration-200 focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 hover:border-slate-300 dark:hover:border-slate-600"
 													>
 														{[
@@ -355,6 +405,7 @@ export default function ProfilePage() {
 														name="currentClass"
 														value={profileData.currentClass}
 														onChange={handleInputChange}
+														disabled={!isEditing}
 														className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/60 text-slate-900 dark:text-slate-100 px-4 py-2 text-sm shadow-sm dark:shadow-lg transition-all duration-200 focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 hover:border-slate-300 dark:hover:border-slate-600"
 													>
 														{['9', '10', '11', '12', 'Graduated'].map((c) => (
@@ -373,6 +424,7 @@ export default function ProfilePage() {
 														name="strengths"
 														value={profileData.strengths}
 														onChange={handleInputChange}
+														disabled={!isEditing}
 														placeholder="E.g., Mathematics, Problem Solving"
 														rows={3}
 														className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/60 text-slate-900 dark:text-slate-100 px-4 py-2 text-sm shadow-sm dark:shadow-lg transition-all duration-200 focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 hover:border-slate-300 dark:hover:border-slate-600"
@@ -387,29 +439,36 @@ export default function ProfilePage() {
 														name="weaknesses"
 														value={profileData.weaknesses}
 														onChange={handleInputChange}
+														disabled={!isEditing}
 														placeholder="E.g., Chemistry Reactions, Reading Comprehension"
 														rows={3}
 														className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/60 text-slate-900 dark:text-slate-100 px-4 py-2 text-sm shadow-sm dark:shadow-lg transition-all duration-200 focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 hover:border-slate-300 dark:hover:border-slate-600"
 													/>
 												</div>
 
-												<Button
-													type="submit"
-													disabled={loading}
-													className="w-full bg-linear-to-r from-purple-600 to-blue-600 text-white hover:scale-[1.02] transition h-10 text-base"
-												>
-													{loading ? (
-														<span className="flex items-center gap-2">
-															<Loader2 className="w-4 h-4 animate-spin" />
-															Saving...
-														</span>
-													) : (
-														<span className="flex items-center gap-2">
-															<CheckCircle className="w-4 h-4" />
-															Complete Profile
-														</span>
-													)}
-												</Button>
+												{isEditing && (
+													<div className="flex gap-3">
+														<Button
+															type="button"
+															variant="ghost"
+															className="flex-1"
+															onClick={handleCancel}
+														>
+															Cancel
+														</Button>
+														<Button
+															type="submit"
+															disabled={loading}
+															className="flex-1 bg-linear-to-r from-purple-600 to-blue-600 text-white"
+														>
+															{loading ? (
+																<Loader2 className="w-4 h-4 animate-spin" />
+															) : (
+																'Save Changes'
+															)}
+														</Button>
+													</div>
+												)}
 											</form>
 										</CardContent>
 									</Card>
