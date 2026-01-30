@@ -1,74 +1,75 @@
-"use client";
+'use client';
 
-import React, { useEffect, useRef, useState } from "react";
-import { motion } from "framer-motion";
-import { gsap } from "gsap";
-import { MouseParallax } from "react-just-parallax";
-import dynamic from "next/dynamic";
+import React, { useEffect, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
+import { gsap } from 'gsap';
+import { MouseParallax } from 'react-just-parallax';
+import dynamic from 'next/dynamic';
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from '@/components/ui/card';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
-import ReactMarkdown from "react-markdown";
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+} from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
+import ReactMarkdown from 'react-markdown';
 import {
-  BookOpen,
-  Zap,
-  Clock,
-  Target,
-  Sparkles,
-  Calendar,
-  AlertCircle,
-  CheckCircle,
-  Loader2,
-} from "lucide-react";
+	BookOpen,
+	Zap,
+	Clock,
+	Target,
+	Sparkles,
+	Calendar,
+	AlertCircle,
+	CheckCircle,
+	Loader2,
+} from 'lucide-react';
+import { redirect } from 'next/navigation';
 
 /* ---------- motion presets (kept lightweight) ---------- */
 
 const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.08, delayChildren: 0.15 },
-  },
+	hidden: { opacity: 0 },
+	visible: {
+		opacity: 1,
+		transition: { staggerChildren: 0.08, delayChildren: 0.15 },
+	},
 };
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 18 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.45, ease: "easeOut" },
-  },
+	hidden: { opacity: 0, y: 18 },
+	visible: {
+		opacity: 1,
+		y: 0,
+		transition: { duration: 0.45, ease: 'easeOut' },
+	},
 };
 
 const cardVariants = {
-  hidden: { opacity: 0, y: 16 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
+	hidden: { opacity: 0, y: 16 },
+	visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
 };
 
 interface DayRoutine {
-  dayNumber: number;
-  title: string;
-  content: string;
+	dayNumber: number;
+	title: string;
+	content: string;
 }
 
 interface StudyPlanSubsections {
-  generalInfo: string;
-  dailyRoutines: DayRoutine[];
+	generalInfo: string;
+	dailyRoutines: DayRoutine[];
 }
 
 export default function StudyPlannerPage() {
