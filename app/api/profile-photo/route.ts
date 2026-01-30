@@ -7,6 +7,22 @@ export const POST = async (request: Request) => {
 
 		const supabase = await createClient();
 
+		const {
+			data: { user },
+		} = await supabase.auth.getUser();
+
+		if (!user)
+			return Response.json(
+				{ success: false, error: 'User not found!' },
+				{ status: 401 },
+			);
+
+		const { data: prevUrl } = await supabase
+			.from('profile')
+			.select('pfpUrl')
+			.eq('user_id', user.id)
+			.single();
+
 		if (!file)
 			return Response.json(
 				{ success: false, error: 'No file provided!' },
@@ -29,30 +45,20 @@ export const POST = async (request: Request) => {
 			.from('profilePhotos')
 			.getPublicUrl(filePath);
 
-		console.log(urlData);
-
-		const {
-			data: { user },
-		} = await supabase.auth.getUser();
-
-		if (!user)
-			return Response.json(
-				{ success: false, error: 'User not found!' },
-				{ status: 401 },
-			);
-
 		const { data: updateData, error: updateError } = await supabase
 			.from('profile')
 			.update({ pfpUrl: filePath })
 			.eq('user_id', user.id);
-
-		console.log(updateData, updateError);
 
 		if (updateError)
 			return Response.json(
 				{ success: false, error: updateError },
 				{ status: 500 },
 			);
+
+		if (prevUrl) {
+			await supabase.storage.from('profilePhotos').remove(prevUrl.pfpUrl);
+		}
 
 		return Response.json({ success: true, url: urlData.publicUrl });
 	} catch (error) {
