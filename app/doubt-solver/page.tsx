@@ -16,7 +16,16 @@ import {
 } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { usePDFWorker } from "@/hooks/use-pdf-worker";
-import { MessageCircle, Send, Lightbulb, Upload, X, File, Play, Download } from "lucide-react";
+import {
+  MessageCircle,
+  Send,
+  Lightbulb,
+  Upload,
+  X,
+  File,
+  Play,
+  Download,
+} from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { processUploadedFile } from "@/lib/file-utils";
 import generateYoutubeVideosFromContent from "../../lib/video-utils";
@@ -50,36 +59,80 @@ interface UploadedFile {
   uploadedAt: number;
 }
 
-const convertMarkdownToHTML = (markdown: string, colorScheme: 'emerald' | 'purple') => {
+const convertMarkdownToHTML = (
+  markdown: string,
+  colorScheme: "emerald" | "purple",
+) => {
   let html = markdown;
 
   // Headers
-  html = html.replace(/^#### (.*$)/gm, `<h4 style="font-size: 1rem; font-weight: bold; color: ${colorScheme === 'emerald' ? '#059669' : '#9333ea'}; margin-top: 0.5rem; margin-bottom: 0.25rem;">$1</h4>`);
-  html = html.replace(/^### (.*$)/gm, `<h3 style="font-size: 1.125rem; font-weight: bold; color: ${colorScheme === 'emerald' ? '#059669' : '#9333ea'}; margin-top: 0.75rem; margin-bottom: 0.5rem;">$1</h3>`);
-  html = html.replace(/^## (.*$)/gm, `<h2 style="font-size: 1.25rem; font-weight: bold; color: ${colorScheme === 'emerald' ? '#047857' : '#7c3aed'}; margin-top: 1rem; margin-bottom: 0.5rem;">$1</h2>`);
-  html = html.replace(/^# (.*$)/gm, `<h1 style="font-size: 1.5rem; font-weight: bold; color: ${colorScheme === 'emerald' ? '#047857' : '#7c3aed'}; margin-top: 1.25rem; margin-bottom: 0.75rem;">$1</h1>`);
+  html = html.replace(
+    /^#### (.*$)/gm,
+    `<h4 style="font-size: 1rem; font-weight: bold; color: ${colorScheme === "emerald" ? "#059669" : "#9333ea"}; margin-top: 0.5rem; margin-bottom: 0.25rem;">$1</h4>`,
+  );
+  html = html.replace(
+    /^### (.*$)/gm,
+    `<h3 style="font-size: 1.125rem; font-weight: bold; color: ${colorScheme === "emerald" ? "#059669" : "#9333ea"}; margin-top: 0.75rem; margin-bottom: 0.5rem;">$1</h3>`,
+  );
+  html = html.replace(
+    /^## (.*$)/gm,
+    `<h2 style="font-size: 1.25rem; font-weight: bold; color: ${colorScheme === "emerald" ? "#047857" : "#7c3aed"}; margin-top: 1rem; margin-bottom: 0.5rem;">$1</h2>`,
+  );
+  html = html.replace(
+    /^# (.*$)/gm,
+    `<h1 style="font-size: 1.5rem; font-weight: bold; color: ${colorScheme === "emerald" ? "#047857" : "#7c3aed"}; margin-top: 1.25rem; margin-bottom: 0.75rem;">$1</h1>`,
+  );
 
   // Bold
-  html = html.replace(/\*\*(.*?)\*\*/g, `<strong style="font-weight: bold; color: ${colorScheme === 'emerald' ? '#111827' : '#7c3aed'};">$1</strong>`);
+  html = html.replace(
+    /\*\*(.*?)\*\*/g,
+    `<strong style="font-weight: bold; color: ${colorScheme === "emerald" ? "#111827" : "#7c3aed"};">$1</strong>`,
+  );
 
   // Italic
-  html = html.replace(/\*(.*?)\*/g, `<em style="font-style: italic; color: ${colorScheme === 'emerald' ? '#374151' : '#9333ea'};">$1</em>`);
+  html = html.replace(
+    /\*(.*?)\*/g,
+    `<em style="font-style: italic; color: ${colorScheme === "emerald" ? "#374151" : "#9333ea"};">$1</em>`,
+  );
 
   // Code inline
-  html = html.replace(/`([^`]+)`/g, `<code style="background-color: ${colorScheme === 'emerald' ? '#d1fae5' : '#faf5ff'}; color: ${colorScheme === 'emerald' ? '#065f46' : '#581c87'}; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-family: monospace; font-size: 0.875rem;">$1</code>`);
+  html = html.replace(
+    /`([^`]+)`/g,
+    `<code style="background-color: ${colorScheme === "emerald" ? "#d1fae5" : "#faf5ff"}; color: ${colorScheme === "emerald" ? "#065f46" : "#581c87"}; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-family: monospace; font-size: 0.875rem;">$1</code>`,
+  );
 
   // Code block
-  html = html.replace(/```([\s\S]*?)```/g, `<pre style="background-color: ${colorScheme === 'emerald' ? '#111827' : 'rgba(147, 51, 234, 0.3)'}; color: ${colorScheme === 'emerald' ? '#6ee7b7' : '#faf5ff'}; padding: 0.75rem 1rem; border-radius: 0.25rem; font-family: monospace; font-size: 0.875rem; overflow-x: auto; margin: 0.75rem 0;"><code>$1</code></pre>`);
+  html = html.replace(
+    /```([\s\S]*?)```/g,
+    `<pre style="background-color: ${colorScheme === "emerald" ? "#111827" : "rgba(147, 51, 234, 0.3)"}; color: ${colorScheme === "emerald" ? "#6ee7b7" : "#faf5ff"}; padding: 0.75rem 1rem; border-radius: 0.25rem; font-family: monospace; font-size: 0.875rem; overflow-x: auto; margin: 0.75rem 0;"><code>$1</code></pre>`,
+  );
 
   // Lists
-  html = html.replace(/^- (.*$)/gm, `<li style="color: #374151; margin-left: 1rem; line-height: 1.625;">$1</li>`);
-  html = html.replace(/^\d+\. (.*$)/gm, `<li style="color: #374151; margin-left: 1rem; line-height: 1.625;">$1</li>`);
+  html = html.replace(
+    /^- (.*$)/gm,
+    `<li style="color: #374151; margin-left: 1rem; line-height: 1.625;">$1</li>`,
+  );
+  html = html.replace(
+    /^\d+\. (.*$)/gm,
+    `<li style="color: #374151; margin-left: 1rem; line-height: 1.625;">$1</li>`,
+  );
 
   // Paragraphs
-  html = html.split('\n\n').map(p => p.trim()).filter(p => p).map(p => `<p style="color: #374151; line-height: 1.625; margin-bottom: 0.75rem;">${p.replace(/\n/g, '<br>')}</p>`).join('');
+  html = html
+    .split("\n\n")
+    .map((p) => p.trim())
+    .filter((p) => p)
+    .map(
+      (p) =>
+        `<p style="color: #374151; line-height: 1.625; margin-bottom: 0.75rem;">${p.replace(/\n/g, "<br>")}</p>`,
+    )
+    .join("");
 
   // Wrap lists
-  html = html.replace(/(<li.*<\/li>\s*)+/g, '<ul style="list-style-type: disc; list-style-position: inside; margin-bottom: 0.75rem; margin-left: 0.5rem;">$&</ul>');
+  html = html.replace(
+    /(<li.*<\/li>\s*)+/g,
+    '<ul style="list-style-type: disc; list-style-position: inside; margin-bottom: 0.75rem; margin-left: 0.5rem;">$&</ul>',
+  );
 
   return html;
 };
@@ -90,7 +143,9 @@ export default function DoubtSolverPage() {
   const [currentDoubt, setCurrentDoubt] = useState<currentDoubt | null>(null);
   const [doubts, setDoubts] = useState<doubts[]>([]);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
-  const [recommendedVideos, setRecommendedVideos] = useState<Array<{title:string;url:string;channel:string}>>([]);
+  const [recommendedVideos, setRecommendedVideos] = useState<
+    Array<{ title: string; url: string; channel: string }>
+  >([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -260,41 +315,83 @@ export default function DoubtSolverPage() {
         let html = markdown;
 
         // Headers
-        html = html.replace(/^#### (.*$)/gim, '<h4 style="font-size: 16px; font-weight: bold; color: #9333ea; margin-top: 12px; margin-bottom: 4px;">$1</h4>');
-        html = html.replace(/^### (.*$)/gim, '<h3 style="font-size: 18px; font-weight: bold; color: #9333ea; margin-top: 16px; margin-bottom: 8px;">$1</h3>');
-        html = html.replace(/^## (.*$)/gim, '<h2 style="font-size: 20px; font-weight: bold; color: #7c3aed; margin-top: 20px; margin-bottom: 8px;">$1</h2>');
-        html = html.replace(/^# (.*$)/gim, '<h1 style="font-size: 24px; font-weight: bold; color: #7c3aed; margin-top: 24px; margin-bottom: 12px;">$1</h1>');
+        html = html.replace(
+          /^#### (.*$)/gim,
+          '<h4 style="font-size: 16px; font-weight: bold; color: #9333ea; margin-top: 12px; margin-bottom: 4px;">$1</h4>',
+        );
+        html = html.replace(
+          /^### (.*$)/gim,
+          '<h3 style="font-size: 18px; font-weight: bold; color: #9333ea; margin-top: 16px; margin-bottom: 8px;">$1</h3>',
+        );
+        html = html.replace(
+          /^## (.*$)/gim,
+          '<h2 style="font-size: 20px; font-weight: bold; color: #7c3aed; margin-top: 20px; margin-bottom: 8px;">$1</h2>',
+        );
+        html = html.replace(
+          /^# (.*$)/gim,
+          '<h1 style="font-size: 24px; font-weight: bold; color: #7c3aed; margin-top: 24px; margin-bottom: 12px;">$1</h1>',
+        );
 
         // Bold and Italic
-        html = html.replace(/\*\*\*(.*?)\*\*\*/g, '<strong style="font-weight: bold;"><em style="font-style: italic;">$1</em></strong>');
-        html = html.replace(/\*\*(.*?)\*\*/g, '<strong style="font-weight: bold; color: #111827;">$1</strong>');
-        html = html.replace(/\*(.*?)\*/g, '<em style="font-style: italic; color: #374151;">$1</em>');
+        html = html.replace(
+          /\*\*\*(.*?)\*\*\*/g,
+          '<strong style="font-weight: bold;"><em style="font-style: italic;">$1</em></strong>',
+        );
+        html = html.replace(
+          /\*\*(.*?)\*\*/g,
+          '<strong style="font-weight: bold; color: #111827;">$1</strong>',
+        );
+        html = html.replace(
+          /\*(.*?)\*/g,
+          '<em style="font-style: italic; color: #374151;">$1</em>',
+        );
 
         // Code blocks and inline code
-        html = html.replace(/```([\s\S]*?)```/g, '<pre style="background-color: #111827; color: #a78bfa; padding: 12px 16px; border-radius: 4px; font-family: monospace; font-size: 14px; overflow-x: auto; margin: 12px 0;"><code>$1</code></pre>');
-        html = html.replace(/`([^`]+)`/g, '<code style="background-color: #f3e8ff; color: #581c87; padding: 2px 8px; border-radius: 4px; font-family: monospace; font-size: 14px;">$1</code>');
+        html = html.replace(
+          /```([\s\S]*?)```/g,
+          '<pre style="background-color: #111827; color: #a78bfa; padding: 12px 16px; border-radius: 4px; font-family: monospace; font-size: 14px; overflow-x: auto; margin: 12px 0;"><code>$1</code></pre>',
+        );
+        html = html.replace(
+          /`([^`]+)`/g,
+          '<code style="background-color: #f3e8ff; color: #581c87; padding: 2px 8px; border-radius: 4px; font-family: monospace; font-size: 14px;">$1</code>',
+        );
 
         // Lists
-        html = html.replace(/^\d+\.\s+(.*)$/gim, '<li style="color: #374151; margin-left: 8px; line-height: 1.625; margin-bottom: 4px;">$1</li>');
-        html = html.replace(/^[-*]\s+(.*)$/gim, '<li style="color: #374151; margin-left: 8px; line-height: 1.625; margin-bottom: 4px;">$1</li>');
+        html = html.replace(
+          /^\d+\.\s+(.*)$/gim,
+          '<li style="color: #374151; margin-left: 8px; line-height: 1.625; margin-bottom: 4px;">$1</li>',
+        );
+        html = html.replace(
+          /^[-*]\s+(.*)$/gim,
+          '<li style="color: #374151; margin-left: 8px; line-height: 1.625; margin-bottom: 4px;">$1</li>',
+        );
 
         // Blockquotes
-        html = html.replace(/^&gt;\s?(.*)$/gim, '<blockquote style="border-left: 4px solid: #a855f7; padding-left: 16px; padding-top: 8px; padding-bottom: 8px; margin: 12px 0; background-color: rgba(243, 232, 255, 0.5); font-style: italic; color: #374151;">$1</blockquote>');
+        html = html.replace(
+          /^&gt;\s?(.*)$/gim,
+          '<blockquote style="border-left: 4px solid: #a855f7; padding-left: 16px; padding-top: 8px; padding-bottom: 8px; margin: 12px 0; background-color: rgba(243, 232, 255, 0.5); font-style: italic; color: #374151;">$1</blockquote>',
+        );
 
         // Wrap lists in ul tags
         html = html.replace(/(<li[^>]*>.*?<\/li>\s*)+/g, (match) => {
-          return '<ul style="list-style-type: disc; list-style-position: inside; margin-bottom: 12px; margin-left: 8px; padding-left: 8px;">' + match + '</ul>';
+          return (
+            '<ul style="list-style-type: disc; list-style-position: inside; margin-bottom: 12px; margin-left: 8px; padding-left: 8px;">' +
+            match +
+            "</ul>"
+          );
         });
 
         // Paragraphs
-        const lines = html.split('\n');
-        html = lines.map(line => {
-          line = line.trim();
-          if (line && !line.startsWith('<') && line.indexOf('</') === -1) {
-            return `<p style="color: #374151; line-height: 1.625; margin-bottom: 12px;">${line}</p>`;
-          }
-          return line;
-        }).join('\n');
+        const lines = html.split("\n");
+        html = lines
+          .map((line) => {
+            line = line.trim();
+            if (line && !line.startsWith("<") && line.indexOf("</") === -1) {
+              return `<p style="color: #374151; line-height: 1.625; margin-bottom: 12px;">${line}</p>`;
+            }
+            return line;
+          })
+          .join("\n");
 
         return html;
       };
@@ -304,8 +401,8 @@ export default function DoubtSolverPage() {
       const htmlContent = `
         <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto;">
           <h1 style="color: #7c3aed; font-size: 24px; font-weight: bold; margin-bottom: 10px;">${currentDoubt.question}</h1>
-          ${currentDoubt.subject ? `<p style="color: #888; font-size: 12px; margin: 5px 0;">📘 Subject: ${currentDoubt.subject}</p>` : ''}
-          ${currentDoubt.examType ? `<p style="color: #888; font-size: 12px; margin: 5px 0;">🎯 Exam: ${currentDoubt.examType}</p>` : ''}
+          ${currentDoubt.subject ? `<p style="color: #888; font-size: 12px; margin: 5px 0;">📘 Subject: ${currentDoubt.subject}</p>` : ""}
+          ${currentDoubt.examType ? `<p style="color: #888; font-size: 12px; margin: 5px 0;">🎯 Exam: ${currentDoubt.examType}</p>` : ""}
           <p style="color: #888; font-size: 12px; margin: 5px 0;">Generated: ${new Date().toLocaleDateString()}</p>
           <div style="margin-top: 20px; background: linear-gradient(to bottom right, #faf5ff, #eff6ff); padding: 24px; border-radius: 8px; border: 1px solid rgba(168, 85, 247, 0.4);">
             ${answerHTML}
@@ -316,9 +413,13 @@ export default function DoubtSolverPage() {
       const options = {
         margin: 0.5,
         filename: `doubt-solution-${Date.now()}.pdf`,
-        image: { type: 'jpeg' as const, quality: 0.98 },
+        image: { type: "jpeg" as const, quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, letterRendering: true },
-        jsPDF: { unit: 'in' as const, format: 'a4' as const, orientation: 'portrait' as const }
+        jsPDF: {
+          unit: "in" as const,
+          format: "a4" as const,
+          orientation: "portrait" as const,
+        },
       };
 
       await html2pdf().set(options).from(htmlContent).save();
@@ -369,9 +470,10 @@ export default function DoubtSolverPage() {
               .join("\n\n---\n\n")
           : null;
 
-      // Truncate file context to max 10000 characters to stay within Groq limits
+      // Truncate file context to max 10000 characters to stay within Gemini limits
       if (fileContext && fileContext.length > 10000) {
-        fileContext = fileContext.substring(0, 10000) + "\n\n[... content truncated ...]";
+        fileContext =
+          fileContext.substring(0, 10000) + "\n\n[... content truncated ...]";
       }
 
       const response = await fetch("/api/solve-doubt", {
@@ -391,14 +493,14 @@ export default function DoubtSolverPage() {
       // Extract answer text
       const answerText = data.answer || "";
 
-      // Detect subject and topic via server API (server-side Groq call)
+      // Detect subject and topic via server API (server-side Gemini call)
       const contentForAnalysis = fileContext || answerText;
-      let detectedSubject = 'general';
-      let detectedTopic = '';
+      let detectedSubject = "general";
+      let detectedTopic = "";
       try {
-        const res = await fetch('/api/detect-subject', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        const res = await fetch("/api/detect-subject", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ content: contentForAnalysis }),
         });
         const j = await res.json();
@@ -407,14 +509,24 @@ export default function DoubtSolverPage() {
           if (j.topic) detectedTopic = j.topic;
         }
       } catch (err) {
-        console.warn('[doubt-solver] Subject detection failed, falling back to hint', err);
+        console.warn(
+          "[doubt-solver] Subject detection failed, falling back to hint",
+          err,
+        );
       }
 
       // Prefer user-selected subject if provided, otherwise use detected subject
-      const effectiveSubject = formData.subject && formData.subject.trim() ? formData.subject.trim() : detectedSubject;
+      const effectiveSubject =
+        formData.subject && formData.subject.trim()
+          ? formData.subject.trim()
+          : detectedSubject;
 
       // Generate recommended videos based on detected topic (preferred) then subject
-      const vids = generateYoutubeVideosFromContent(contentForAnalysis, effectiveSubject, detectedTopic);
+      const vids = generateYoutubeVideosFromContent(
+        contentForAnalysis,
+        effectiveSubject,
+        detectedTopic,
+      );
       setRecommendedVideos(vids);
 
       setCurrentDoubt(data);
@@ -660,10 +772,7 @@ export default function DoubtSolverPage() {
                               />
                             ),
                             em: ({ node, ...props }) => (
-                              <em
-                                className="italic text-gray-700"
-                                {...props}
-                              />
+                              <em className="italic text-gray-700" {...props} />
                             ),
                             ul: ({ node, ...props }) => (
                               <ul
@@ -695,9 +804,7 @@ export default function DoubtSolverPage() {
                             thead: ({ node, ...props }) => (
                               <thead className="bg-purple-100" {...props} />
                             ),
-                            tbody: ({ node, ...props }) => (
-                              <tbody {...props} />
-                            ),
+                            tbody: ({ node, ...props }) => <tbody {...props} />,
                             tr: ({ node, ...props }) => (
                               <tr
                                 className="border border-purple-300"
@@ -734,9 +841,7 @@ export default function DoubtSolverPage() {
                                 {...props}
                               />
                             ),
-                            hr: () => (
-                              <hr className="my-4 border-purple-300" />
-                            ),
+                            hr: () => <hr className="my-4 border-purple-300" />,
                           }}
                         >
                           {currentDoubt.answer}
@@ -750,37 +855,54 @@ export default function DoubtSolverPage() {
                         📺 Recommended Videos
                       </h3>
                       <div className="grid grid-cols-1 gap-3">
-                                                  {(() => {
-                                                      const defaultVideos = [
-                                                          { title: 'Understanding Core Concepts', channel: 'Educational', url: 'https://www.youtube.com/results?search_query=understanding+core+concepts' },
-                                                          { title: 'Advanced Problem Solving', channel: 'Educational', url: 'https://www.youtube.com/results?search_query=advanced+problem+solving' },
-                                                          { title: 'In-Depth Explanation', channel: 'Educational', url: 'https://www.youtube.com/results?search_query=in+depth+explanation' },
-                                                      ];
+                        {(() => {
+                          const defaultVideos = [
+                            {
+                              title: "Understanding Core Concepts",
+                              channel: "Educational",
+                              url: "https://www.youtube.com/results?search_query=understanding+core+concepts",
+                            },
+                            {
+                              title: "Advanced Problem Solving",
+                              channel: "Educational",
+                              url: "https://www.youtube.com/results?search_query=advanced+problem+solving",
+                            },
+                            {
+                              title: "In-Depth Explanation",
+                              channel: "Educational",
+                              url: "https://www.youtube.com/results?search_query=in+depth+explanation",
+                            },
+                          ];
 
-                                                      const videosToShow = (recommendedVideos && recommendedVideos.length > 0) ? recommendedVideos : defaultVideos;
+                          const videosToShow =
+                            recommendedVideos && recommendedVideos.length > 0
+                              ? recommendedVideos
+                              : defaultVideos;
 
-                                                      return videosToShow.map((video, idx) => (
-                                                          <a
-                                                              key={idx}
-                                                              href={video.url}
-                                                              target="_blank"
-                                                              rel="noopener noreferrer"
-                                                              className="p-3 rounded-lg bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border border-purple-200/40 dark:border-purple-500/30 hover:shadow-md transition-all hover:border-purple-400 group"
-                                                          >
-                                                              <div className="flex items-start gap-3 mb-2">
-                                                                  <div className="p-2 rounded-lg bg-purple-100 group-hover:bg-purple-200 transition">
-                                                                      <Play className="w-4 h-4 text-purple-600" />
-                                                                  </div>
-                                                                  <div className="flex-1 min-w-0">
-                                                                      <h4 className="font-semibold text-sm text-gray-900 group-hover:text-blue-600 transition line-clamp-2">
-                                                                          {video.title}
-                                                                      </h4>
-                                                                      <p className="text-xs text-gray-600 mt-1">{video.channel}</p>
-                                                                  </div>
-                                                              </div>
-                                                          </a>
-                                                      ));
-                                                  })()}
+                          return videosToShow.map((video, idx) => (
+                            <a
+                              key={idx}
+                              href={video.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-3 rounded-lg bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border border-purple-200/40 dark:border-purple-500/30 hover:shadow-md transition-all hover:border-purple-400 group"
+                            >
+                              <div className="flex items-start gap-3 mb-2">
+                                <div className="p-2 rounded-lg bg-purple-100 group-hover:bg-purple-200 transition">
+                                  <Play className="w-4 h-4 text-purple-600" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="font-semibold text-sm text-gray-900 group-hover:text-blue-600 transition line-clamp-2">
+                                    {video.title}
+                                  </h4>
+                                  <p className="text-xs text-gray-600 mt-1">
+                                    {video.channel}
+                                  </p>
+                                </div>
+                              </div>
+                            </a>
+                          ));
+                        })()}
                       </div>
                     </div>
                   </CardContent>

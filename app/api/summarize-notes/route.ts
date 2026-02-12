@@ -18,8 +18,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // Generate summary using Groq
-    console.log("[summarize-notes] Calling Groq API...");
+    // Generate summary using Gemini
+    console.log("[summarize-notes] Calling Gemini API...");
     const summary = await summarizeNotes(notes, subject, examType);
 
     console.log("[summarize-notes] Generated summary successfully");

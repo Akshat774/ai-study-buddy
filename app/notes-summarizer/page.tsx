@@ -232,9 +232,11 @@ export default function NotesSummarizerPage() {
           (formData.notes ? `\n\n### Additional Notes\n${formData.notes}` : "");
       }
 
-      // Truncate content to max 12000 characters to stay within Groq token limits
+      // Truncate content to max 12000 characters to stay within Gemini token limits
       if (contentToSummarize.length > 12000) {
-        contentToSummarize = contentToSummarize.substring(0, 12000) + "\n\n[... content truncated ...]";
+        contentToSummarize =
+          contentToSummarize.substring(0, 12000) +
+          "\n\n[... content truncated ...]";
       }
 
       const response = await fetch("/api/summarize-notes", {
@@ -253,13 +255,13 @@ export default function NotesSummarizerPage() {
         throw new Error(data.error || "Failed to summarize notes");
       }
 
-      // Detect subject and topic via server API (server-side Groq call)
-      let detectedSubject = 'general';
-      let detectedTopic = '';
+      // Detect subject and topic via server API (server-side Gemini call)
+      let detectedSubject = "general";
+      let detectedTopic = "";
       try {
-        const res = await fetch('/api/detect-subject', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        const res = await fetch("/api/detect-subject", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ content: contentToSummarize }),
         });
         const j = await res.json();
@@ -268,11 +270,17 @@ export default function NotesSummarizerPage() {
           if (j.topic) detectedTopic = j.topic;
         }
       } catch (err) {
-        console.warn('[notes-summarizer] Subject detection failed, falling back to hint', err);
+        console.warn(
+          "[notes-summarizer] Subject detection failed, falling back to hint",
+          err,
+        );
       }
 
       // Prefer user-selected subject if provided, otherwise use detected subject
-      const effectiveSubject = formData.subject && formData.subject.trim() ? formData.subject.trim() : detectedSubject;
+      const effectiveSubject =
+        formData.subject && formData.subject.trim()
+          ? formData.subject.trim()
+          : detectedSubject;
 
       // Generate videos based on detected topic (preferred) then subject
       const youtubeVideos = generateYoutubeVideosFromContent(
@@ -327,41 +335,83 @@ export default function NotesSummarizerPage() {
         let html = markdown;
 
         // Headers
-        html = html.replace(/^#### (.*$)/gim, '<h4 style="font-size: 16px; font-weight: bold; color: #059669; margin-top: 12px; margin-bottom: 4px;">$1</h4>');
-        html = html.replace(/^### (.*$)/gim, '<h3 style="font-size: 18px; font-weight: bold; color: #059669; margin-top: 16px; margin-bottom: 8px;">$1</h3>');
-        html = html.replace(/^## (.*$)/gim, '<h2 style="font-size: 20px; font-weight: bold; color: #047857; margin-top: 20px; margin-bottom: 8px;">$1</h2>');
-        html = html.replace(/^# (.*$)/gim, '<h1 style="font-size: 24px; font-weight: bold; color: #047857; margin-top: 24px; margin-bottom: 12px;">$1</h1>');
+        html = html.replace(
+          /^#### (.*$)/gim,
+          '<h4 style="font-size: 16px; font-weight: bold; color: #059669; margin-top: 12px; margin-bottom: 4px;">$1</h4>',
+        );
+        html = html.replace(
+          /^### (.*$)/gim,
+          '<h3 style="font-size: 18px; font-weight: bold; color: #059669; margin-top: 16px; margin-bottom: 8px;">$1</h3>',
+        );
+        html = html.replace(
+          /^## (.*$)/gim,
+          '<h2 style="font-size: 20px; font-weight: bold; color: #047857; margin-top: 20px; margin-bottom: 8px;">$1</h2>',
+        );
+        html = html.replace(
+          /^# (.*$)/gim,
+          '<h1 style="font-size: 24px; font-weight: bold; color: #047857; margin-top: 24px; margin-bottom: 12px;">$1</h1>',
+        );
 
         // Bold and Italic
-        html = html.replace(/\*\*\*(.*?)\*\*\*/g, '<strong style="font-weight: bold;"><em style="font-style: italic;">$1</em></strong>');
-        html = html.replace(/\*\*(.*?)\*\*/g, '<strong style="font-weight: bold; color: #111827;">$1</strong>');
-        html = html.replace(/\*(.*?)\*/g, '<em style="font-style: italic; color: #374151;">$1</em>');
+        html = html.replace(
+          /\*\*\*(.*?)\*\*\*/g,
+          '<strong style="font-weight: bold;"><em style="font-style: italic;">$1</em></strong>',
+        );
+        html = html.replace(
+          /\*\*(.*?)\*\*/g,
+          '<strong style="font-weight: bold; color: #111827;">$1</strong>',
+        );
+        html = html.replace(
+          /\*(.*?)\*/g,
+          '<em style="font-style: italic; color: #374151;">$1</em>',
+        );
 
         // Code blocks and inline code
-        html = html.replace(/```([\s\S]*?)```/g, '<pre style="background-color: #111827; color: #6ee7b7; padding: 12px 16px; border-radius: 4px; font-family: monospace; font-size: 14px; overflow-x: auto; margin: 12px 0;"><code>$1</code></pre>');
-        html = html.replace(/`([^`]+)`/g, '<code style="background-color: #d1fae5; color: #065f46; padding: 2px 8px; border-radius: 4px; font-family: monospace; font-size: 14px;">$1</code>');
+        html = html.replace(
+          /```([\s\S]*?)```/g,
+          '<pre style="background-color: #111827; color: #6ee7b7; padding: 12px 16px; border-radius: 4px; font-family: monospace; font-size: 14px; overflow-x: auto; margin: 12px 0;"><code>$1</code></pre>',
+        );
+        html = html.replace(
+          /`([^`]+)`/g,
+          '<code style="background-color: #d1fae5; color: #065f46; padding: 2px 8px; border-radius: 4px; font-family: monospace; font-size: 14px;">$1</code>',
+        );
 
         // Lists
-        html = html.replace(/^\d+\.\s+(.*)$/gim, '<li style="color: #374151; margin-left: 8px; line-height: 1.625; margin-bottom: 4px;">$1</li>');
-        html = html.replace(/^[-*]\s+(.*)$/gim, '<li style="color: #374151; margin-left: 8px; line-height: 1.625; margin-bottom: 4px;">$1</li>');
+        html = html.replace(
+          /^\d+\.\s+(.*)$/gim,
+          '<li style="color: #374151; margin-left: 8px; line-height: 1.625; margin-bottom: 4px;">$1</li>',
+        );
+        html = html.replace(
+          /^[-*]\s+(.*)$/gim,
+          '<li style="color: #374151; margin-left: 8px; line-height: 1.625; margin-bottom: 4px;">$1</li>',
+        );
 
         // Blockquotes
-        html = html.replace(/^&gt;\s?(.*)$/gim, '<blockquote style="border-left: 4px solid #10b981; padding-left: 16px; padding-top: 8px; padding-bottom: 8px; margin: 12px 0; background-color: rgba(209, 250, 229, 0.5); font-style: italic; color: #374151;">$1</blockquote>');
+        html = html.replace(
+          /^&gt;\s?(.*)$/gim,
+          '<blockquote style="border-left: 4px solid #10b981; padding-left: 16px; padding-top: 8px; padding-bottom: 8px; margin: 12px 0; background-color: rgba(209, 250, 229, 0.5); font-style: italic; color: #374151;">$1</blockquote>',
+        );
 
         // Wrap lists in ul tags
         html = html.replace(/(<li[^>]*>.*?<\/li>\s*)+/g, (match) => {
-          return '<ul style="list-style-type: disc; list-style-position: inside; margin-bottom: 12px; margin-left: 8px; padding-left: 8px;">' + match + '</ul>';
+          return (
+            '<ul style="list-style-type: disc; list-style-position: inside; margin-bottom: 12px; margin-left: 8px; padding-left: 8px;">' +
+            match +
+            "</ul>"
+          );
         });
 
         // Paragraphs
-        const lines = html.split('\n');
-        html = lines.map(line => {
-          line = line.trim();
-          if (line && !line.startsWith('<') && line.indexOf('</') === -1) {
-            return `<p style="color: #374151; line-height: 1.625; margin-bottom: 12px;">${line}</p>`;
-          }
-          return line;
-        }).join('\n');
+        const lines = html.split("\n");
+        html = lines
+          .map((line) => {
+            line = line.trim();
+            if (line && !line.startsWith("<") && line.indexOf("</") === -1) {
+              return `<p style="color: #374151; line-height: 1.625; margin-bottom: 12px;">${line}</p>`;
+            }
+            return line;
+          })
+          .join("\n");
 
         return html;
       };
@@ -371,8 +421,8 @@ export default function NotesSummarizerPage() {
       const htmlContent = `
         <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto;">
           <h1 style="color: #047857; font-size: 24px; font-weight: bold; margin-bottom: 10px;">${summary.title}</h1>
-          ${summary.subject ? `<p style="color: #888; font-size: 12px; margin: 5px 0;">📘 Subject: ${summary.subject}</p>` : ''}
-          ${summary.examType ? `<p style="color: #888; font-size: 12px; margin: 5px 0;">🎯 Exam: ${summary.examType}</p>` : ''}
+          ${summary.subject ? `<p style="color: #888; font-size: 12px; margin: 5px 0;">📘 Subject: ${summary.subject}</p>` : ""}
+          ${summary.examType ? `<p style="color: #888; font-size: 12px; margin: 5px 0;">🎯 Exam: ${summary.examType}</p>` : ""}
           <p style="color: #888; font-size: 12px; margin: 5px 0;">Generated: ${new Date().toLocaleDateString()}</p>
           <div style="margin-top: 20px; background: linear-gradient(to bottom right, #d1fae5, #dbeafe); padding: 24px; border-radius: 8px; border: 1px solid rgba(16, 185, 129, 0.4);">
             ${summaryHTML}
@@ -383,9 +433,13 @@ export default function NotesSummarizerPage() {
       const options = {
         margin: 0.5,
         filename: `${summary.title.replace(/\s+/g, "-")}.pdf`,
-        image: { type: 'jpeg' as const, quality: 0.98 },
+        image: { type: "jpeg" as const, quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, letterRendering: true },
-        jsPDF: { unit: 'in' as const, format: 'a4' as const, orientation: 'portrait' as const }
+        jsPDF: {
+          unit: "in" as const,
+          format: "a4" as const,
+          orientation: "portrait" as const,
+        },
       };
 
       await html2pdf().set(options).from(htmlContent).save();

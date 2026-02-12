@@ -1,121 +1,220 @@
-import { generateText, streamText } from 'ai';
-import { groq } from '@ai-sdk/groq';
+import { GoogleGenAI } from "@google/genai";
 
 /**
- * Initialize Groq client with API key
- * Uses @ai-sdk/groq under the hood
+ * Initialize Gemini client with API key
+ * Uses @google/genai under the hood
  */
 
 export interface GroqOptions {
-	temperature?: number;
-	maxTokens?: number;
-	topP?: number;
-	frequencyPenalty?: number;
-	presencePenalty?: number;
+  temperature?: number;
+  maxTokens?: number;
+  topP?: number;
+  frequencyPenalty?: number;
+  presencePenalty?: number;
 }
 
-const GROQ_MODEL = 'llama-3.1-8b-instant';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3-flash-preview";
+
+let cachedClient: GoogleGenAI | null = null;
+let cachedApiKey: string | null = null;
+
+function getGeminiClient(providedKey?: string) {
+  const apiKey = (
+    providedKey ||
+    process.env.GEMINI_API_KEY ||
+    process.env.GOOGLE_API_KEY ||
+    ""
+  ).trim();
+  if (!apiKey) {
+    throw new Error(
+      'Gemini API key is missing. Pass it via the "apiKey" option or set GEMINI_API_KEY/GOOGLE_API_KEY in the environment.',
+    );
+  }
+
+  if (cachedClient && cachedApiKey === apiKey) {
+    return cachedClient;
+  }
+
+  cachedClient = new GoogleGenAI({ apiKey });
+  cachedApiKey = apiKey;
+  return cachedClient;
+}
+
+function buildGenerationConfig(options: GroqOptions) {
+  const config: Record<string, number> = {};
+
+  if (typeof options.temperature === "number")
+    config.temperature = options.temperature;
+  if (typeof options.topP === "number") config.topP = options.topP;
+  if (typeof options.maxTokens === "number")
+    config.maxOutputTokens = options.maxTokens;
+  if (typeof options.frequencyPenalty === "number")
+    config.frequencyPenalty = options.frequencyPenalty;
+  if (typeof options.presencePenalty === "number")
+    config.presencePenalty = options.presencePenalty;
+
+  return Object.keys(config).length ? config : undefined;
+}
+
+function toUserContent(prompt: string) {
+  return [
+    {
+      role: "user",
+      parts: [{ text: prompt }],
+    },
+  ];
+}
+
+function extractTextFromResponse(response: any): string {
+  if (!response) return "";
+
+  const directText =
+    typeof response.text === "function"
+      ? response.text()
+      : typeof response.text === "string"
+        ? response.text
+        : undefined;
+  if (typeof directText === "string" && directText.trim()) {
+    return directText.trim();
+  }
+
+  const target = response.response || response;
+  const candidates = target?.candidates || [];
+  const collected: string[] = [];
+
+  for (const candidate of candidates) {
+    const parts = candidate?.content?.parts || candidate?.parts || [];
+    for (const part of parts) {
+      if (!part) continue;
+      if (typeof part === "string") {
+        collected.push(part);
+      } else if (typeof part.text === "string") {
+        collected.push(part.text);
+      }
+    }
+  }
+
+  if (collected.length) {
+    return collected.join("").trim();
+  }
+
+  if (Array.isArray(target?.contents)) {
+    for (const content of target.contents) {
+      const parts = content?.parts || [];
+      for (const part of parts) {
+        if (typeof part === "string") {
+          collected.push(part);
+        } else if (typeof part?.text === "string") {
+          collected.push(part.text);
+        }
+      }
+    }
+  }
+
+  return collected.join("").trim();
+}
 
 /**
- * Generate text using Groq API
+ * Generate text using Gemini API
  * Use this for non-streaming responses (summaries, short answers, etc.)
  */
 export async function generateWithGroq(
-	prompt: string,
-	options: GroqOptions & { apiKey?: string } = {},
+  prompt: string,
+  options: GroqOptions & { apiKey?: string } = {},
 ): Promise<string> {
-	try {
-		const {
-			temperature = 0.7,
-			maxTokens = 2000,
-			topP = 1,
-			frequencyPenalty = 0,
-			presencePenalty = 0,
-		} = options;
+  try {
+    const {
+      temperature = 0.7,
+      maxTokens = 2000,
+      topP = 1,
+      frequencyPenalty = 0,
+      presencePenalty = 0,
+    } = options;
 
-		// Resolve API key: prefer explicit option, fall back to environment
-		const apiKey = (options as any).apiKey || process.env.GROQ_API_KEY;
-		if (!apiKey) {
-			throw new Error('Groq API key is missing. Pass it via the "apiKey" option or set GROQ_API_KEY in the environment.');
-		}
+    const client = getGeminiClient((options as any).apiKey);
+    const response = await client.models.generateContent({
+      model: GEMINI_MODEL,
+      contents: toUserContent(prompt),
+      config: buildGenerationConfig({
+        temperature,
+        maxTokens,
+        topP,
+        frequencyPenalty,
+        presencePenalty,
+      }),
+    });
 
-		const result = await generateText({
-			model: groq(GROQ_MODEL),
-			prompt,
-			apiKey,
-			temperature,
-			topP,
-			frequencyPenalty: frequencyPenalty === 0 ? undefined : frequencyPenalty,
-			presencePenalty: presencePenalty === 0 ? undefined : presencePenalty,
-		});
+    const text = extractTextFromResponse(response);
+    if (!text) {
+      throw new Error("Gemini returned an empty response.");
+    }
 
-		return result.text;
-	} catch (error) {
-		console.error('[Groq] Error generating text:', error);
-		throw new Error(
-			`Failed to generate response: ${error instanceof Error ? error.message : String(error)}`,
-		);
-	}
+    return text;
+  } catch (error) {
+    console.error("[Gemini] Error generating text:", error);
+    throw new Error(
+      `Failed to generate response: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
 }
 
 /**
- * Stream text from Groq API
+ * Stream text from Gemini API
  * Use this for long responses where you want streaming updates
  */
 export async function streamWithGroq(
-	prompt: string,
-	onChunk: (chunk: string) => void,
-	options: GroqOptions = {},
+  prompt: string,
+  onChunk: (chunk: string) => void,
+  options: GroqOptions = {},
 ): Promise<void> {
-	try {
-		const {
-			temperature = 0.7,
-			maxTokens = 2000,
-			topP = 1,
-			frequencyPenalty = 0,
-			presencePenalty = 0,
-		} = options;
+  try {
+    const {
+      temperature = 0.7,
+      maxTokens = 2000,
+      topP = 1,
+      frequencyPenalty = 0,
+      presencePenalty = 0,
+    } = options;
 
-		// Resolve API key: prefer explicit option, fall back to environment
-		const apiKey = (options as any).apiKey || process.env.GROQ_API_KEY;
-		if (!apiKey) {
-			throw new Error('Groq API key is missing. Pass it via the "apiKey" option or set GROQ_API_KEY in the environment.');
-		}
+    const client = getGeminiClient((options as any).apiKey);
+    const stream = await client.models.generateContentStream({
+      model: GEMINI_MODEL,
+      contents: toUserContent(prompt),
+      config: buildGenerationConfig({
+        temperature,
+        maxTokens,
+        topP,
+        frequencyPenalty,
+        presencePenalty,
+      }),
+    });
 
-		const stream = await streamText({
-			model: groq(GROQ_MODEL),
-			prompt,
-			apiKey,
-			temperature,
-			topP,
-			frequencyPenalty: frequencyPenalty === 0 ? undefined : frequencyPenalty,
-			presencePenalty: presencePenalty === 0 ? undefined : presencePenalty,
-		});
-
-		for await (const chunk of stream.textStream) {
-			onChunk(chunk);
-		}
-	} catch (error) {
-		console.error('[Groq] Error streaming text:', error);
-		throw new Error(
-			`Failed to stream response: ${error instanceof Error ? error.message : String(error)}`,
-		);
-	}
+    const iterable = (stream as any)?.stream ?? stream;
+    for await (const chunk of iterable) {
+      const text = extractTextFromResponse(chunk);
+      if (text) onChunk(text);
+    }
+  } catch (error) {
+    console.error("[Gemini] Error streaming text:", error);
+    throw new Error(
+      `Failed to stream response: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
 }
 
 /**
- * Generate a comprehensive study plan using Groq
+ * Generate a comprehensive study plan using Gemini
  */
 export async function generateStudyPlan(
-	subject: string,
-	exam: string,
-	days: string,
-	difficulty: string,
-	topics: string,
+  subject: string,
+  exam: string,
+  days: string,
+  difficulty: string,
+  topics: string,
 ): Promise<string> {
-	const dayCount = parseInt(days) || 30;
+  const dayCount = parseInt(days) || 30;
 
-	const prompt = `Act as a professional Academic Success Coach. Your task is to generate a comprehensive, high-density study plan and timetable.
+  const prompt = `Act as a professional Academic Success Coach. Your task is to generate a comprehensive, high-density study plan and timetable.
 
 STUDENT PROFILE:
 - Subject: ${subject}
@@ -164,52 +263,52 @@ INSTRUCTIONS:
 
 Generate the structured plan now:`;
 
-	return generateWithGroq(prompt, {
-		temperature: 0.8,
-		maxTokens: 8000,
-	});
+  return generateWithGroq(prompt, {
+    temperature: 0.8,
+    maxTokens: 8000,
+  });
 }
 
 /**
  * Solve a student's doubt with detailed explanation
  */
 export async function solveDubt(
-	question: string,
-	subject: string,
-	answerType: string,
-	fileContext?: string | null,
+  question: string,
+  subject: string,
+  answerType: string,
+  fileContext?: string | null,
 ): Promise<string> {
-	let word_limit = '';
-	let additionalNotes = '';
+  let word_limit = "";
+  let additionalNotes = "";
 
-	switch (answerType) {
-		case 'Short':
-			word_limit = '100-200';
-			break;
-		case 'Medium':
-			word_limit = '200-500';
-			additionalNotes =
-				'You do not need to focus on all topics equally and may choose which topics needs to be focused on.';
-			break;
-		case 'Long':
-			word_limit = '500-1000';
-			additionalNotes =
-				'You do not need to focus on all topics equally and may choose which topics needs to be focused on. The topic should not feel under explained and should be communicated clearly.';
-			break;
-		case 'Detailed':
-			word_limit = '1000+';
-			additionalNotes =
-				'You do not need to focus on all topics equally and may choose which topics needs to be focused on. The topic should not feel under explained and should be communicated clearly. Every topic must be completely understandable alone even if it need more explanation or you may reference your previous topics by clearly referencing them. The same point should not be repeated without valid reason. If your knowledge is limited  or is not updated you are to state so clearly. Feel free to change the topic names to better suit your explanation.';
-			break;
-		default:
-			word_limit = '200-500';
-	}
+  switch (answerType) {
+    case "Short":
+      word_limit = "100-200";
+      break;
+    case "Medium":
+      word_limit = "200-500";
+      additionalNotes =
+        "You do not need to focus on all topics equally and may choose which topics needs to be focused on.";
+      break;
+    case "Long":
+      word_limit = "500-1000";
+      additionalNotes =
+        "You do not need to focus on all topics equally and may choose which topics needs to be focused on. The topic should not feel under explained and should be communicated clearly.";
+      break;
+    case "Detailed":
+      word_limit = "1000+";
+      additionalNotes =
+        "You do not need to focus on all topics equally and may choose which topics needs to be focused on. The topic should not feel under explained and should be communicated clearly. Every topic must be completely understandable alone even if it need more explanation or you may reference your previous topics by clearly referencing them. The same point should not be repeated without valid reason. If your knowledge is limited  or is not updated you are to state so clearly. Feel free to change the topic names to better suit your explanation.";
+      break;
+    default:
+      word_limit = "200-500";
+  }
 
-	let prompt = '';
+  let prompt = "";
 
-	if (fileContext) {
-		// When file context is provided - hybrid approach: file primary + external knowledge for clarity
-		prompt = `You are an expert doubt solver combining reference materials with external knowledge for maximum clarity.
+  if (fileContext) {
+    // When file context is provided - hybrid approach: file primary + external knowledge for clarity
+    prompt = `You are an expert doubt solver combining reference materials with external knowledge for maximum clarity.
 
 PRIMARY TASK:
 - Answer the student's doubt by primarily referencing the PROVIDED REFERENCE MATERIALS below
@@ -274,9 +373,9 @@ ANSWER LENGTH: ${word_limit} words (flexibility of 100 words)
 ${additionalNotes}
 
 Now provide a comprehensive, well-structured answer:`;
-	} else {
-		// General doubt solving without file context
-		prompt = `You are an expert doubt solver providing comprehensive, well-structured answers.
+  } else {
+    // General doubt solving without file context
+    prompt = `You are an expert doubt solver providing comprehensive, well-structured answers.
 
 STUDENT'S QUESTION: "${question}"
 SUBJECT: ${subject}
@@ -328,20 +427,20 @@ ANSWER LENGTH: ${word_limit} words (flexibility of 100 words)
 ${additionalNotes}
 
 Now provide a comprehensive, well-structured answer:`;
-	}
+  }
 
-	return generateWithGroq(prompt, { temperature: 0.8, maxTokens: 3500 });
+  return generateWithGroq(prompt, { temperature: 0.8, maxTokens: 3500 });
 }
 
 /**
  * Summarize study notes intelligently
  */
 export async function summarizeNotes(
-	notes: string,
-	subject: string,
-	examType: string,
+  notes: string,
+  subject: string,
+  examType: string,
 ): Promise<string> {
-	const prompt = `You are an expert note summarizer specializing in creating exam-ready study materials. Your task is to create a comprehensive, well-structured, and professional summary of the provided notes/content.
+  const prompt = `You are an expert note summarizer specializing in creating exam-ready study materials. Your task is to create a comprehensive, well-structured, and professional summary of the provided notes/content.
 
 CONTENT TO SUMMARIZE:
 ${notes}
@@ -567,19 +666,19 @@ FORMATTING INSTRUCTIONS:
 
 Now create a comprehensive, professional exam-ready summary that is well-organized, clearly structured, and focused on what students need to know for ${examType}:`;
 
-	return generateWithGroq(prompt, {
-		temperature: 0.7,
-		maxTokens: 3500,
-	});
+  return generateWithGroq(prompt, {
+    temperature: 0.7,
+    maxTokens: 3500,
+  });
 }
 
 /**
  * Extract key concepts from notes
  */
 export async function extractKeyConceptsFromNotes(
-	notes: string,
+  notes: string,
 ): Promise<string> {
-	const prompt = `Extract and list all key concepts, definitions, and important terms from the following study notes. Format as a structured markdown list grouped by topic.
+  const prompt = `Extract and list all key concepts, definitions, and important terms from the following study notes. Format as a structured markdown list grouped by topic.
 
 Notes:
 ${notes}
@@ -590,28 +689,28 @@ Provide:
 3. Key relationships between concepts
 4. Examples and applications`;
 
-	return generateWithGroq(prompt, {
-		temperature: 0.6,
-		maxTokens: 1500,
-	});
+  return generateWithGroq(prompt, {
+    temperature: 0.6,
+    maxTokens: 1500,
+  });
 }
 
 /**
- * Detect the subject and topic of content using Groq
+ * Detect the subject and topic of content using Gemini
  * Analyzes uploaded files or text to determine academic subject and specific topic
  * Truncates content to 8000 chars to avoid token limits
  */
 export async function detectContentSubjectAndTopic(
-	content: string,
+  content: string,
 ): Promise<{ subject: string; topic: string }> {
-	if (!content || content.trim().length === 0) {
-		return { subject: 'general', topic: 'unknown' };
-	}
+  if (!content || content.trim().length === 0) {
+    return { subject: "general", topic: "unknown" };
+  }
 
-	// Truncate to first 8000 characters to avoid exceeding token limits
-	const truncatedContent = content.substring(0, 8000);
+  // Truncate to first 8000 characters to avoid exceeding token limits
+  const truncatedContent = content.substring(0, 8000);
 
-	const prompt = `Analyze this academic content and identify ONLY the subject and topic. Be concise.
+  const prompt = `Analyze this academic content and identify ONLY the subject and topic. Be concise.
 
 Content:
 ${truncatedContent}
@@ -619,25 +718,25 @@ ${truncatedContent}
 Respond in JSON ONLY:
 {"subject": "lowercase_subject", "topic": "topic_name"}`;
 
-	try {
-		const response = await generateWithGroq(prompt, {
-			temperature: 0.3,
-			maxTokens: 100,
-		});
+  try {
+    const response = await generateWithGroq(prompt, {
+      temperature: 0.3,
+      maxTokens: 100,
+    });
 
-		// Parse JSON response
-		const jsonMatch = response.match(/\{[\s\S]*\}/);
-		if (jsonMatch) {
-			const parsed = JSON.parse(jsonMatch[0]);
-			return {
-				subject: parsed.subject?.toLowerCase() || 'general',
-				topic: parsed.topic || 'unknown',
-			};
-		}
+    // Parse JSON response
+    const jsonMatch = response.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      return {
+        subject: parsed.subject?.toLowerCase() || "general",
+        topic: parsed.topic || "unknown",
+      };
+    }
 
-		return { subject: 'general', topic: 'unknown' };
-	} catch (error) {
-		console.error('[Groq] Error detecting content subject/topic:', error);
-		return { subject: 'general', topic: 'unknown' };
-	}
+    return { subject: "general", topic: "unknown" };
+  } catch (error) {
+    console.error("[Gemini] Error detecting content subject/topic:", error);
+    return { subject: "general", topic: "unknown" };
+  }
 }

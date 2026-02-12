@@ -39,7 +39,7 @@
 
 ### What Makes Cerevia Special?
 
-✅ **AI-Driven**: Leverages GROQ API with LLaMA models for instant doubt solving
+✅ **AI-Driven**: Leverages Google Gemini models for instant doubt solving
 ✅ **Adaptive Learning**: Quizzes adjust difficulty based on performance
 ✅ **Mobile-First**: Fully responsive design for all devices
 ✅ **Privacy-Focused**: End-to-end encryption, data retention control
@@ -49,7 +49,7 @@
 ### Core Features
 
 - 📊 **Intelligent Dashboard** - Real-time analytics and performance tracking
-- 📅 **AI Study Planner** - Personalized study schedules using GROQ AI
+- 📅 **AI Study Planner** - Personalized study schedules powered by Gemini AI
 - ❓ **Doubt Solver** - Real-time Q&A with detailed explanations
 - 📝 **Notes Summarizer** - Intelligent note compression with key point extraction
 - 🎓 **Daily Quizzes** - Adaptive, streak-based quiz system
@@ -91,7 +91,7 @@ The platform supports exam types including **JEE Advanced/Main**, **NEET**, **GA
 ### 3. **Doubt Solver** ❓
 
 - Ask complex academic questions
-- AI-powered instant answers using GROQ API
+- AI-powered instant answers using Google Gemini API
 - Rich text formatting for answers
 - Subject-specific Q&A
 - Response history
@@ -250,7 +250,7 @@ pnpm dev
 - **Authentication**: Supabase Auth (Email + Social)
 - **Database**: Supabase PostgreSQL
 - **File Storage**: Supabase Storage (profile photos, PDFs)
-- **AI**: GROQ API (LLM for doubt solving)
+- **AI**: Google Gemini API (LLM for doubt solving)
 - **API Calls**: Server actions & API routes
 
 ### Development Tools
@@ -271,7 +271,7 @@ pnpm dev
 - **pnpm**: 8+ (or npm 10+)
 - **Git**: 2.0+
 - **Supabase Account**: Free tier works fine
-- **GROQ API Key**: Get free key from [console.groq.com](https://console.groq.com)
+- **Gemini API Key**: Create one at [Google AI Studio](https://ai.google.dev/gemini-api/docs/api-key)
 - **Disk Space**: ~500MB for dependencies
 - **RAM**: 2GB minimum (4GB recommended)
 
@@ -298,8 +298,8 @@ Create `.env.local` file:
 # Supabase Configuration
 NEXT_PUBLIC_SUPABASE_URL=....
 NEXT_PUBLIC_SUPABASE_ANON_KEY=....
-# GROQ API
-GROQ_API_KEY=...
+# Gemini API
+GEMINI_API_KEY=...
 
 
 ```
@@ -425,7 +425,7 @@ ai-study-buddy/
 │   └── ui/                      # shadcn/ui components
 ├── lib/                         # Utilities & configurations
 │   ├── auth.ts                  # Supabase auth client
-│   ├── groq-client.ts           # GROQ API integration
+│   ├── groq-client.ts           # Gemini API integration
 │   ├── utils.ts                 # Helper functions
 │   └── quizzes.ts              # Quiz generation logic (NEW)
 ├── hooks/                       # Custom React hooks
@@ -453,7 +453,7 @@ ai-study-buddy/
           ┌────────────┼────────────┐
           ▼            ▼            ▼
     ┌──────────┐ ┌──────────┐ ┌──────────┐
-    │ Supabase │ │GROQ API  │ │ Vercel   │
+    │ Supabase │ │Gemini API│ │ Vercel   │
     │  (Auth/  │ │(LLM for  │ │Analytics │
     │  DB/     │ │Doubt     │ └──────────┘
     │  Storage)│ │Solving)  │
@@ -501,7 +501,7 @@ The AI considers multiple factors:
 
 ### Doubt Solver Integration
 
-- Uses GROQ's LLaMA model for instant answers
+- Uses Google's Gemini Flash model for instant answers
 - Supports multi-subject queries
 - Maintains conversation context
 - Provides detailed explanations with examples
@@ -690,8 +690,8 @@ Create `.env.local`:
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-public-anon-key
 
-# GROQ AI API
-GROQ_API_KEY=your-groq-api-key-here
+# Gemini AI API
+GEMINI_API_KEY=your-gemini-api-key-here
 
 # Optional: Analytics
 NEXT_PUBLIC_VERCEL_ANALYTICS_ID=your-analytics-id
@@ -846,7 +846,7 @@ git push origin main
 ```
 NEXT_PUBLIC_SUPABASE_URL=...
 NEXT_PUBLIC_SUPABASE_ANON_KEY=...
-GROQ_API_KEY=...
+GEMINI_API_KEY=...
 ```
 
 ### Alternative: Deploy to Self-Hosted
@@ -1071,7 +1071,7 @@ Use provided PowerShell scripts:
 
 ### Known Limitations
 
-- ⚠️ GROQ API has rate limits (upgrade plan for higher limits)
+- ⚠️ Gemini API has rate limits (upgrade plan for higher limits)
 - ⚠️ PDF parsing limited to text-based PDFs (not image-heavy)
 - ⚠️ Quiz generation supports up to 50 questions per session
 - ⚠️ File uploads limited to 10MB per file
@@ -1132,7 +1132,7 @@ Use provided PowerShell scripts:
 
 #### Slow Page Load (>3s)
 
-- **Cause**: Large bundle size or slow GROQ API
+- **Cause**: Large bundle size or slow Gemini API
 - **Fix**:
   1. Run `next build` and check bundle size
   2. Optimize images with Next.js Image component
@@ -1140,10 +1140,10 @@ Use provided PowerShell scripts:
 
 #### Quiz Generation Timeout
 
-- **Cause**: GROQ API rate limit or network latency
+- **Cause**: Gemini API rate limit or network latency
 - **Fix**:
-  1. Check GROQ API status
-  2. Verify `GROQ_API_KEY` is valid
+  1. Check Gemini API status
+  2. Verify `GEMINI_API_KEY` is valid
   3. Add retry logic with exponential backoff
 
 ### Database Issues
@@ -1168,11 +1168,11 @@ Use provided PowerShell scripts:
 - **Fix**: User needs to re-login; check session refresh in middleware
 - **Log**: Check browser DevTools Console for detailed error
 
-#### "GROQ API rate limit exceeded"
+#### "Gemini API rate limit exceeded"
 
 - **Cause**: Too many requests to AI API
-- **Fix**: Implement request queuing or upgrade GROQ plan
-- **Monitor**: Check GROQ dashboard for usage stats
+- **Fix**: Implement request queuing or upgrade Gemini plan
+- **Monitor**: Check Google AI Studio dashboard for usage stats
 
 ---
 
@@ -1181,7 +1181,7 @@ Use provided PowerShell scripts:
 - [Next.js Documentation](https://nextjs.org/docs)
 - [Supabase Docs](https://supabase.com/docs)
 - [Tailwind CSS](https://tailwindcss.com)
-- [GROQ API](https://console.groq.com)
+- [Google Gemini API](https://ai.google.dev/gemini-api)
 - [shadcn/ui](https://ui.shadcn.com)
 
 ---
@@ -1206,7 +1206,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 - Inspiration from Indian education challenges
 - Built with ❤️ for Indian students
-- Special thanks to GROQ for AI capabilities
+- Special thanks to Google DeepMind for Gemini capabilities
 - Supabase for backend infrastructure
 
 ---

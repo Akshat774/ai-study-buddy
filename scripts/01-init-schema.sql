@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS study_plans (
   daily_hours DECIMAL(3,1) NOT NULL, -- Hours per day
   study_schedule JSONB, -- Stores day-wise plan structure
   generated_by_ai BOOLEAN DEFAULT FALSE,
-  ai_model VARCHAR(50), -- 'groq', 'openai', etc.
+  ai_model VARCHAR(50), -- 'gemini', 'openai', etc.
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
